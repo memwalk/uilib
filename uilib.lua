@@ -18,7 +18,7 @@ local Library = {};
 Library = {
 	Open = true;
 	Accent = Color3.fromRGB(119, 120, 255);
-	FSize = 9;
+	FSize = 12;
 	PageAmount = 0;
 	Pages = {};
 	Sections = {};
@@ -1095,7 +1095,7 @@ do
 		local PageName = Instance.new("TextLabel")
 		PageName.Name = "PageName"
 		PageName.FontFace = Library.Fonts.Types.Smallest_Pixel
-		PageName.TextColor3 = Color3.fromRGB(145,145,145)
+		PageName.TextColor3 = Color3.fromRGB(210,210,218)
 		PageName.TextSize = Library.FSize
 		PageName.Text = Page.Name
 		PageName.TextStrokeTransparency = 0
@@ -1226,7 +1226,7 @@ do
 				end
 			end
 			--ButtonInline.BackgroundColor3 = Page.Open and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(10, 10, 10)
-			PageName.TextColor3 = Page.Open and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(145,145,145)
+			PageName.TextColor3 = Page.Open and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(210,210,218)
 			Accent.Visible = Page.Open
 		end
 		--
@@ -1257,6 +1257,135 @@ do
 			WeaponOutline = Weapons,
 			WeaponInline = Holder,
 		}
+		Page.SubTabs = {}
+		Page.ActiveSubTab = nil
+		Page._defaultLeft = Left
+		Page._defaultRight = Right
+
+		-- Sub-tab bar (shown only when Page:SubTab is used)
+		local SubTabBar = Instance.new("Frame")
+		SubTabBar.Name = "SubTabBar"
+		SubTabBar.BackgroundTransparency = 1
+		SubTabBar.BorderSizePixel = 0
+		SubTabBar.Size = UDim2.new(1, 0, 0, 20)
+		SubTabBar.Position = UDim2.new(0, 0, 0, 0)
+		SubTabBar.Visible = false
+		SubTabBar.ZIndex = 8
+		SubTabBar.Parent = NewPage
+
+		local SubTabLayout = Instance.new("UIListLayout")
+		SubTabLayout.FillDirection = Enum.FillDirection.Horizontal
+		SubTabLayout.Padding = UDim.new(0, 4)
+		SubTabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		SubTabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+		SubTabLayout.Parent = SubTabBar
+
+		Page.Elements.SubTabBar = SubTabBar
+
+		function Page:SubTab(Properties)
+			Properties = Properties or {}
+			local Sub = {
+				Name = Properties.Name or Properties.name or "Sub",
+				Page = Page,
+				Open = false,
+				Sections = {},
+			}
+
+			if not SubTabBar.Visible then
+				SubTabBar.Visible = true
+				-- Shift default columns down / hide them when using subtabs
+				Left.Visible = false
+				Right.Visible = false
+				Left.Position = UDim2.new(0, 0, 0, 24)
+				Left.Size = UDim2.new(0.5, -4, 1, -24)
+				Right.Position = UDim2.new(0.5, 4, 0, 24)
+				Right.Size = UDim2.new(0.5, -4, 1, -24)
+			end
+
+			local count = #Page.SubTabs + 1
+			local Btn = Instance.new("TextButton")
+			Btn.Name = "SubTab_" .. Sub.Name
+			Btn.AutoButtonColor = false
+			Btn.FontFace = Library.Fonts.Types.Smallest_Pixel
+			Btn.Text = Sub.Name
+			Btn.TextSize = Library.FSize
+			Btn.TextColor3 = Color3.fromRGB(210, 210, 218)
+			Btn.TextStrokeTransparency = 0
+			Btn.BackgroundColor3 = Color3.fromRGB(14, 14, 16)
+			Btn.BorderColor3 = Color3.fromRGB(40, 40, 48)
+			Btn.Size = UDim2.new(0, math.max(70, #Sub.Name * 7 + 18), 1, 0)
+			Btn.ZIndex = 9
+			Btn.Parent = SubTabBar
+
+			local Content = Instance.new("Frame")
+			Content.Name = "SubContent_" .. Sub.Name
+			Content.BackgroundTransparency = 1
+			Content.BorderSizePixel = 0
+			Content.Position = UDim2.new(0, 0, 0, 24)
+			Content.Size = UDim2.new(1, 0, 1, -24)
+			Content.Visible = false
+			Content.Parent = NewPage
+
+			local SLeft = Instance.new("Frame")
+			SLeft.Name = "Left"
+			SLeft.BackgroundTransparency = 1
+			SLeft.BorderSizePixel = 0
+			SLeft.Size = UDim2.new(0.5, -4, 1, 0)
+			SLeft.ZIndex = 2
+			local SL = Instance.new("UIListLayout")
+			SL.Padding = UDim.new(0, 6)
+			SL.SortOrder = Enum.SortOrder.LayoutOrder
+			SL.Parent = SLeft
+			SLeft.Parent = Content
+
+			local SRight = Instance.new("Frame")
+			SRight.Name = "Right"
+			SRight.BackgroundTransparency = 1
+			SRight.BorderSizePixel = 0
+			SRight.Position = UDim2.new(0.5, 4, 0, 0)
+			SRight.Size = UDim2.new(0.5, -4, 1, 0)
+			local SR = Instance.new("UIListLayout")
+			SR.Padding = UDim.new(0, 6)
+			SR.SortOrder = Enum.SortOrder.LayoutOrder
+			SR.Parent = SRight
+			SRight.Parent = Content
+
+			Sub.Elements = {
+				Left = SLeft,
+				Right = SRight,
+				Main = Content,
+				Button = Btn,
+			}
+
+			function Sub:Turn(bool)
+				Sub.Open = bool
+				Content.Visible = bool
+				Btn.TextColor3 = bool and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(210, 210, 218)
+				Btn.BackgroundColor3 = bool and Color3.fromRGB(22, 22, 28) or Color3.fromRGB(14, 14, 16)
+				if bool then
+					Page.Elements.Left = SLeft
+					Page.Elements.Right = SRight
+					Page.ActiveSubTab = Sub
+					for _, other in ipairs(Page.SubTabs) do
+						if other ~= Sub and other.Open then
+							other:Turn(false)
+						end
+					end
+				end
+			end
+
+			Library:Connection(Btn.MouseButton1Down, function()
+				if not Sub.Open then
+					Sub:Turn(true)
+				end
+			end)
+
+			Page.SubTabs[#Page.SubTabs + 1] = Sub
+			if #Page.SubTabs == 1 then
+				Sub:Turn(true)
+			end
+			return setmetatable(Sub, Library.Pages)
+		end
 
 		-- // Drawings
 		if #Page.Window.Pages == 0 then
@@ -1465,18 +1594,23 @@ do
 			Sections = {},
 		}
 		--
+		local sideParent = Section.Side == "left" and Section.Page.Elements.Left or Section.Page.Elements.Right
+		if Section.Page.ActiveSubTab and Section.Page.ActiveSubTab.Elements then
+			sideParent = Section.Side == "left" and Section.Page.ActiveSubTab.Elements.Left or Section.Page.ActiveSubTab.Elements.Right
+		end
+
 		local SectionOutline = Instance.new("Frame")
 		SectionOutline.Name = "SectionOutline"
 		SectionOutline.AutomaticSize = Enum.AutomaticSize.Y
-		SectionOutline.BackgroundColor3 = Color3.fromRGB(17,17,17)
-		SectionOutline.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		SectionOutline.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+		SectionOutline.BorderColor3 = Color3.fromRGB(55, 55, 65)
 		SectionOutline.Size = UDim2.new(1, 0, 0, 20)
-		SectionOutline.Parent = Section.Side == "left" and Section.Page.Elements.Left or Section.Side == "right" and Section.Page.Elements.Right
+		SectionOutline.Parent = sideParent
 		SectionOutline.ZIndex = 10 - #Section.Page.Sections
 
 		local SectionInline = Instance.new("Frame")
 		SectionInline.Name = "SectionInline"
-		SectionInline.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+		SectionInline.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 		SectionInline.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		SectionInline.BorderSizePixel = 0
 		SectionInline.Position = UDim2.new(0, 1, 0, 1)
@@ -1509,7 +1643,7 @@ do
 		Title.Name = "Title"
 		Title.FontFace = Library.Fonts.Types.Smallest_Pixel
 		Title.Text = Section.Name
-		Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+		Title.TextColor3 = Color3.fromRGB(240, 240, 245)
 		Title.TextSize = Library.FSize
 		Title.TextStrokeTransparency = 0
 		Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -1533,7 +1667,7 @@ do
 
 		local UIListLayout = Instance.new("UIListLayout")
 		UIListLayout.Name = "UIListLayout"
-		UIListLayout.Padding = UDim.new(0, 10)
+		UIListLayout.Padding = UDim.new(0, 8)
 		UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		UIListLayout.Parent = SectionContent
 
@@ -1761,7 +1895,7 @@ do
 			Hold.ZIndex = 2
 			Hold.FontFace = Library.Fonts.Types.Smallest_Pixel
 			Hold.Text = "Hold"
-			Hold.TextColor3 = Keybind.Mode == "Hold" and Color3.fromRGB(255,255,255) or Color3.fromRGB(145,145,145)
+			Hold.TextColor3 = Keybind.Mode == "Hold" and Color3.fromRGB(255,255,255) or Color3.fromRGB(210,210,218)
 			Hold.TextSize = Library.FSize
 			Hold.TextStrokeTransparency = 0
 
@@ -1776,7 +1910,7 @@ do
 			Toggle.ZIndex = 2
 			Toggle.FontFace = Library.Fonts.Types.Smallest_Pixel
 			Toggle.Text = "Toggle"
-			Toggle.TextColor3 = Keybind.Mode == "Toggle" and Color3.fromRGB(255,255,255) or Color3.fromRGB(145,145,145)
+			Toggle.TextColor3 = Keybind.Mode == "Toggle" and Color3.fromRGB(255,255,255) or Color3.fromRGB(210,210,218)
 			Toggle.TextSize = Library.FSize
 			Toggle.TextStrokeTransparency = 0
 
@@ -1791,7 +1925,7 @@ do
 			Always.ZIndex = 2
 			Always.FontFace = Library.Fonts.Types.Smallest_Pixel
 			Always.Text = "Always"
-			Always.TextColor3 = Keybind.Mode == "Always" and Color3.fromRGB(255,255,255) or Color3.fromRGB(145,145,145)
+			Always.TextColor3 = Keybind.Mode == "Always" and Color3.fromRGB(255,255,255) or Color3.fromRGB(210,210,218)
 			Always.TextSize = Library.FSize
 			Always.TextStrokeTransparency = 0
 
@@ -1927,25 +2061,25 @@ do
 			Library:Connection(Hold.MouseButton1Down, function()
 				set("Hold")
 				Hold.TextColor3 = Color3.fromRGB(255,255,255)
-				Toggle.TextColor3 = Color3.fromRGB(145,145,145)
-				Always.TextColor3 = Color3.fromRGB(145,145,145)
+				Toggle.TextColor3 = Color3.fromRGB(210,210,218)
+				Always.TextColor3 = Color3.fromRGB(210,210,218)
 				ModeBox.Visible = false
 				NewToggle.ZIndex = 1
 			end)
 			--
 			Library:Connection(Toggle.MouseButton1Down, function()
 				set("Toggle")
-				Hold.TextColor3 = Color3.fromRGB(145,145,145)
+				Hold.TextColor3 = Color3.fromRGB(210,210,218)
 				Toggle.TextColor3 = Color3.fromRGB(255,255,255)
-				Always.TextColor3 = Color3.fromRGB(145,145,145)
+				Always.TextColor3 = Color3.fromRGB(210,210,218)
 				ModeBox.Visible = false
 				NewToggle.ZIndex = 1
 			end)
 			--
 			Library:Connection(Always.MouseButton1Down, function()
 				set("Always")
-				Hold.TextColor3 = Color3.fromRGB(145,145,145)
-				Toggle.TextColor3 = Color3.fromRGB(145,145,145)
+				Hold.TextColor3 = Color3.fromRGB(210,210,218)
+				Toggle.TextColor3 = Color3.fromRGB(210,210,218)
 				Always.TextColor3 = Color3.fromRGB(255,255,255)
 				ModeBox.Visible = false
 				NewToggle.ZIndex = 1
@@ -2430,7 +2564,7 @@ do
 						end
 
 						Value.Text = #chosen == 0 and "" or table.concat(textchosen, ",") .. (cutobject and ", ..." or "")
-						text.TextColor3 = Color3.fromRGB(145,145,145)
+						text.TextColor3 = Color3.fromRGB(210,210,218)
 						
 						Library.Flags[Dropdown.Flag] = chosen
 						Dropdown.Callback(chosen)
@@ -2458,7 +2592,7 @@ do
 				else
 					for opt, tbl in next, Dropdown.OptionInsts do
 						if opt ~= option then
-							tbl.text.TextColor3 = Color3.fromRGB(145,145,145)
+							tbl.text.TextColor3 = Color3.fromRGB(210,210,218)
 						end
 					end
 					chosen = option
@@ -2497,7 +2631,7 @@ do
 				OptionLabel.Name = "OptionLabel"
 				OptionLabel.FontFace = Library.Fonts.Types.Smallest_Pixel
 				OptionLabel.Text = option
-				OptionLabel.TextColor3 = Color3.fromRGB(145, 145, 145)
+				OptionLabel.TextColor3 = Color3.fromRGB(210,210,218)
 				OptionLabel.TextSize = Library.FSize
 				OptionLabel.TextStrokeTransparency = 0
 				OptionLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -2528,7 +2662,7 @@ do
 
 				for opt, tbl in next, Dropdown.OptionInsts do
 					if not table.find(option, opt) then
-						tbl.text.TextColor3 = Color3.fromRGB(145,145,145)
+						tbl.text.TextColor3 = Color3.fromRGB(210,210,218)
 					end
 				end
 
@@ -2559,7 +2693,7 @@ do
 			else
 				for opt, tbl in next, Dropdown.OptionInsts do
 					if opt ~= option then
-						tbl.text.TextColor3 = Color3.fromRGB(145,145,145)
+						tbl.text.TextColor3 = Color3.fromRGB(210,210,218)
 					end
 				end
 				if table.find(Dropdown.Options, option) then
@@ -2718,7 +2852,7 @@ do
 							table.insert(textchosen, opt)
 						end
 
-						text.TextColor3 = Color3.fromRGB(145,145,145)
+						text.TextColor3 = Color3.fromRGB(210,210,218)
 
 						Library.Flags[Dropdown.Flag] = chosen
 						Dropdown.Callback(chosen)
@@ -2745,7 +2879,7 @@ do
 				else
 					for opt, tbl in next, Dropdown.OptionInsts do
 						if opt ~= option then
-							tbl.text.TextColor3 = Color3.fromRGB(145,145,145)
+							tbl.text.TextColor3 = Color3.fromRGB(210,210,218)
 						end
 					end
 					chosen = option
@@ -2780,7 +2914,7 @@ do
 				OptionLabel.Name = "OptionLabel"
 				OptionLabel.FontFace = Library.Fonts.Types.Smallest_Pixel
 				OptionLabel.Text = option
-				OptionLabel.TextColor3 = Color3.fromRGB(145, 145, 145)
+				OptionLabel.TextColor3 = Color3.fromRGB(210,210,218)
 				OptionLabel.TextSize = Library.FSize
 				OptionLabel.TextStrokeTransparency = 0
 				OptionLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -2811,7 +2945,7 @@ do
 
 				for opt, tbl in next, Dropdown.OptionInsts do
 					if not table.find(option, opt) then
-						tbl.text.TextColor3 = Color3.fromRGB(145,145,145)
+						tbl.text.TextColor3 = Color3.fromRGB(210,210,218)
 					end
 				end
 
@@ -2840,7 +2974,7 @@ do
 			else
 				for opt, tbl in next, Dropdown.OptionInsts do
 					if opt ~= option then
-						tbl.text.TextColor3 = Color3.fromRGB(145,145,145)
+						tbl.text.TextColor3 = Color3.fromRGB(210,210,218)
 					end
 				end
 				if table.find(Dropdown.Options, option) then
@@ -3169,7 +3303,7 @@ do
 		Hold.ZIndex = 2
 		Hold.FontFace = Library.Fonts.Types.Smallest_Pixel
 		Hold.Text = "Hold"
-		Hold.TextColor3 = Keybind.Mode == "Hold" and Color3.fromRGB(255,255,255) or Color3.fromRGB(145,145,145)
+		Hold.TextColor3 = Keybind.Mode == "Hold" and Color3.fromRGB(255,255,255) or Color3.fromRGB(210,210,218)
 		Hold.TextSize = Library.FSize
 		Hold.TextStrokeTransparency = 0
 
@@ -3184,7 +3318,7 @@ do
 		Toggle.ZIndex = 2
 		Toggle.FontFace = Library.Fonts.Types.Smallest_Pixel
 		Toggle.Text = "Toggle"
-		Toggle.TextColor3 = Keybind.Mode == "Toggle" and Color3.fromRGB(255,255,255) or Color3.fromRGB(145,145,145)
+		Toggle.TextColor3 = Keybind.Mode == "Toggle" and Color3.fromRGB(255,255,255) or Color3.fromRGB(210,210,218)
 		Toggle.TextSize = Library.FSize
 		Toggle.TextStrokeTransparency = 0
 
@@ -3199,7 +3333,7 @@ do
 		Always.ZIndex = 2
 		Always.FontFace = Library.Fonts.Types.Smallest_Pixel
 		Always.Text = "Always"
-		Always.TextColor3 = Keybind.Mode == "Always" and Color3.fromRGB(255,255,255) or Color3.fromRGB(145,145,145)
+		Always.TextColor3 = Keybind.Mode == "Always" and Color3.fromRGB(255,255,255) or Color3.fromRGB(210,210,218)
 		Always.TextSize = Library.FSize
 		Always.TextStrokeTransparency = 0
 
@@ -3335,25 +3469,25 @@ do
 		Library:Connection(Hold.MouseButton1Down, function()
 			set("Hold")
 			Hold.TextColor3 = Color3.fromRGB(255,255,255)
-			Toggle.TextColor3 = Color3.fromRGB(145,145,145)
-			Always.TextColor3 = Color3.fromRGB(145,145,145)
+			Toggle.TextColor3 = Color3.fromRGB(210,210,218)
+			Always.TextColor3 = Color3.fromRGB(210,210,218)
 			ModeBox.Visible = false
 			NewBind.ZIndex = 1
 		end)
 		--
 		Library:Connection(Toggle.MouseButton1Down, function()
 			set("Toggle")
-			Hold.TextColor3 = Color3.fromRGB(145,145,145)
+			Hold.TextColor3 = Color3.fromRGB(210,210,218)
 			Toggle.TextColor3 = Color3.fromRGB(255,255,255)
-			Always.TextColor3 = Color3.fromRGB(145,145,145)
+			Always.TextColor3 = Color3.fromRGB(210,210,218)
 			ModeBox.Visible = false
 			NewBind.ZIndex = 1
 		end)
 		--
 		Library:Connection(Always.MouseButton1Down, function()
 			set("Always")
-			Hold.TextColor3 = Color3.fromRGB(145,145,145)
-			Toggle.TextColor3 = Color3.fromRGB(145,145,145)
+			Hold.TextColor3 = Color3.fromRGB(210,210,218)
+			Toggle.TextColor3 = Color3.fromRGB(210,210,218)
 			Always.TextColor3 = Color3.fromRGB(255,255,255)
 			ModeBox.Visible = false
 			NewBind.ZIndex = 1
@@ -3456,7 +3590,7 @@ do
 		Value.Text = Textbox.State
 		Value.PlaceholderText = Textbox.Placeholder
 		Value.TextColor3 = Color3.fromRGB(255, 255, 255)
-		Value.PlaceholderColor3 = Color3.fromRGB(145,145,145)
+		Value.PlaceholderColor3 = Color3.fromRGB(160,160,170)
 		Value.TextSize = Library.FSize
 		Value.TextStrokeTransparency = 0
 		Value.TextXAlignment = Enum.TextXAlignment.Left
