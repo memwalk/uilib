@@ -890,8 +890,21 @@ function Library:CreateCharPreview(shell, height, xOffset)
     end
 
     local function project(worldPos)
-        local v = cam:WorldToViewportPoint(worldPos)
-        return Vector2.new(v.X, v.Y), v.Z > 0.05
+        local size = vp.AbsoluteSize
+        if size.X < 2 or size.Y < 2 then
+            return Vector2.zero, false
+        end
+        local relative = cam.CFrame:PointToObjectSpace(worldPos)
+        if relative.Z >= -0.05 then
+            return Vector2.zero, false
+        end
+        local aspect = size.X / size.Y
+        local tanHalf = math.tan(math.rad(cam.FieldOfView * 0.5))
+        local nx = (relative.X / -relative.Z) / (tanHalf * aspect)
+        local ny = (relative.Y / -relative.Z) / tanHalf
+        local x = (nx + 1) * 0.5 * size.X
+        local y = (1 - ny) * 0.5 * size.Y
+        return Vector2.new(x, y), true
     end
 
     local function setText(lbl, text, x, y, visible, color, align)
@@ -998,37 +1011,34 @@ function Library:CreateCharPreview(shell, height, xOffset)
 
         local minX, minY = math.huge, math.huge
         local maxX, maxY = -math.huge, -math.huge
-        local any = false
+        local validCount = 0
         local partMap = {}
         for _, n in ipairs(BOX_PARTS) do
             local p = cloneModel:FindFirstChild(n)
             if p and p:IsA('BasePart') then
                 partMap[n] = p
-                local cf, sz = p.CFrame, p.Size * 0.5
-                for _, ox in ipairs({ -1, 1 }) do
-                    for _, oy in ipairs({ -1, 1 }) do
-                        for _, oz in ipairs({ -1, 1 }) do
-                            local screen, ok = project((cf * CFrame.new(ox * sz.X, oy * sz.Y, oz * sz.Z)).Position)
-                            if ok then
-                                any = true
-                                if screen.X < minX then minX = screen.X end
-                                if screen.Y < minY then minY = screen.Y end
-                                if screen.X > maxX then maxX = screen.X end
-                                if screen.Y > maxY then maxY = screen.Y end
-                            end
-                        end
-                    end
+                local screen, ok = project(p.Position)
+                if ok then
+                    validCount += 1
+                    if screen.X < minX then minX = screen.X end
+                    if screen.Y < minY then minY = screen.Y end
+                    if screen.X > maxX then maxX = screen.X end
+                    if screen.Y > maxY then maxY = screen.Y end
                 end
             end
         end
 
         local boxPos, boxSize
-        if any then
-            boxPos = Vector2.new(math.floor(minX - BOX_PAD_X), math.floor(minY - BOX_PAD_Y))
-            boxSize = Vector2.new(
-                math.max(10, math.floor(maxX - minX + BOX_PAD_X * 2)),
-                math.max(10, math.floor(maxY - minY + BOX_PAD_Y * 2))
-            )
+        if validCount >= 2 and minX ~= math.huge then
+            local width = maxX - minX
+            local height = maxY - minY
+            if width >= 2 and height >= 2 then
+                boxPos = Vector2.new(math.floor(minX - BOX_PAD_X), math.floor(minY - BOX_PAD_Y))
+                boxSize = Vector2.new(
+                    math.max(10, math.floor(width + BOX_PAD_X * 2)),
+                    math.max(10, math.floor(height + BOX_PAD_Y * 2))
+                )
+            end
         end
 
         if showBox and boxPos and boxSize then
