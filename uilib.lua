@@ -137,23 +137,34 @@ local function resolveKey(v)
     if v == nil or v == '' then return nil end
     if typeof(v) == 'EnumItem' then return v end
     if type(v) ~= 'string' then return nil end
-    local mouse = { MB1 = 'MouseButton1', MB2 = 'MouseButton2', MB3 = 'MouseButton3', MB4 = 'MouseButton4', MB5 = 'MouseButton5' }
-    if mouse[v] then
-        local ok, item = pcall(function() return Enum.UserInputType[mouse[v]] end)
-        if ok then return item end
+    local raw = v:gsub('%s+', '')
+    raw = raw:gsub('^Enum%.KeyCode%.', ''):gsub('^Enum%.UserInputType%.', '')
+    local mouse = {
+        MB1 = 'MouseButton1', MB2 = 'MouseButton2', MB3 = 'MouseButton3',
+        MB4 = 'MouseButton4', MB5 = 'MouseButton5',
+        MouseButton1 = 'MouseButton1', MouseButton2 = 'MouseButton2',
+        MouseButton3 = 'MouseButton3', MouseButton4 = 'MouseButton4',
+        MouseButton5 = 'MouseButton5',
+    }
+    if mouse[raw] then
+        local ok, item = pcall(function() return Enum.UserInputType[mouse[raw]] end)
+        if ok and item then return item end
     end
-    if v:match('^MouseButton%d+$') then
-        local ok, item = pcall(function() return Enum.UserInputType[v] end)
-        if ok then return item end
+    if raw:match('^MouseButton%d+$') then
+        local ok, item = pcall(function() return Enum.UserInputType[raw] end)
+        if ok and item then return item end
     end
     local aliases = {
         LShift = 'LeftShift', RShift = 'RightShift',
         LCtrl = 'LeftControl', RCtrl = 'RightControl',
         LAlt = 'LeftAlt', RAlt = 'RightAlt',
+        LeftControl = 'LeftControl', RightControl = 'RightControl',
+        LeftShift = 'LeftShift', RightShift = 'RightShift',
+        LeftAlt = 'LeftAlt', RightAlt = 'RightAlt',
     }
-    local name = aliases[v] or v
+    local name = aliases[raw] or raw
     local ok, item = pcall(function() return Enum.KeyCode[name] end)
-    if ok and item then return item end
+    if ok and typeof(item) == 'EnumItem' then return item end
     return nil
 end
 
@@ -1883,6 +1894,23 @@ function Library:Window(opts)
                 st.Transparency = 0
             end)
 
+            -- Right-click cycles Hold / Toggle / Always (Linoria-style)
+            btn.MouseButton2Click:Connect(function()
+                local order = { 'Hold', 'Toggle', 'Always' }
+                local idx = 1
+                for i, m in ipairs(order) do
+                    if m == mode then idx = i break end
+                end
+                local nextMode = order[(idx % #order) + 1]
+                state:Set(nextMode)
+                btn.Text = displayKey(key) .. ' [' .. nextMode:sub(1, 1) .. ']'
+                task.delay(0.85, function()
+                    if not state.Listening then
+                        btn.Text = displayKey(key)
+                    end
+                end)
+            end)
+
             local function isKeyDownNow()
                 if typeof(key) ~= 'EnumItem' then return false end
                 if key.EnumType == Enum.KeyCode then
@@ -2761,9 +2789,10 @@ function Library:LoadConfig(config)
     if type(config) ~= 'string' then return end
     local parsed = {}
     for _, line in ipairs(string.split(config, '\n')) do
-        local key, rest = line:match('^([^:]+):%s*(.+)$')
+        local key, rest = line:match('^%s*([^:]+):%s*(.+)$')
         if key and rest and key ~= 'ConfigConfig_List' then
-            local value = rest
+            key = key:gsub('%s+$', '')
+            local value = rest:gsub('\r$', '')
             if value:sub(1, 3) == 'rgb' then
                 local parts = string.split(value:sub(5, #value - 1), ',')
                 value = parts
@@ -2778,27 +2807,85 @@ function Library:LoadConfig(config)
         end
     end
 
+    -- Old flag names / Linoria keybind suffix variants -> current names
+    local FLAG_ALIASES = {
+        AimbotKey = 'AimbotAimKey',
+        ManipKey = 'ManipAimKey',
+        ['AimbotKey_KEY'] = 'AimbotAimKey_KEY',
+        ['AimbotKey_KEY STATE'] = 'AimbotAimKey_KEY STATE',
+        ['AimbotKey_KEYSTATE'] = 'AimbotAimKey_KEY STATE',
+        ['ManipKey_KEY'] = 'ManipAimKey_KEY',
+        ['ManipKey_KEY STATE'] = 'ManipAimKey_KEY STATE',
+        ['ManipKey_KEYSTATE'] = 'ManipAimKey_KEY STATE',
+        ['AimbotAimKey_KEYSTATE'] = 'AimbotAimKey_KEY STATE',
+        ['ManipAimKey_KEYSTATE'] = 'ManipAimKey_KEY STATE',
+    }
+    for old, new in pairs(FLAG_ALIASES) do
+        if parsed[old] ~= nil and parsed[new] == nil then
+            parsed[new] = parsed[old]
+        end
+    end
+
     local function objFor(flag)
         local direct = Library.Flags[flag .. '_obj']
         if direct then return direct, flag end
-        local base = flag:match('^(.+)_KEY STATE$') or flag:match('^(.+)_KEY$')
+        local base = flag:match('^(.+)_KEY STATE$')
+            or flag:match('^(.+)_KEYSTATE$')
+            or flag:match('^(.+)_KEY$')
         if base and Library.Flags[base .. '_obj'] then
             return Library.Flags[base .. '_obj'], base
         end
         return nil, flag
     end
 
+    local function isKeyStateFlag(flag)
+        return flag:match('_KEY STATE$') ~= nil or flag:match('_KEYSTATE$') ~= nil
+    end
+    local function isKeyFlag(flag)
+        return flag:match('_KEY$') ~= nil
+    end
+
+    -- Deterministic apply: values -> keys -> modes (so Hold/Always wins last)
+    local ordered = {}
     for flag, value in pairs(parsed) do
+        local rank = 1
+        if isKeyFlag(flag) then
+            rank = 2
+        elseif isKeyStateFlag(flag) then
+            rank = 3
+        end
+        ordered[#ordered + 1] = { flag = flag, value = value, rank = rank }
+    end
+    table.sort(ordered, function(a, b)
+        if a.rank ~= b.rank then return a.rank < b.rank end
+        return a.flag < b.flag
+    end)
+
+    for i = 1, #ordered do
+        local flag = ordered[i].flag
+        local value = ordered[i].value
         local obj = objFor(flag)
         if obj and type(obj.Set) == 'function' then
-            if flag:match('_KEY STATE$') then
-                obj:Set(value)
-            elseif flag:match('_KEY$') then
+            if isKeyStateFlag(flag) then
+                local mode = tostring(value or '')
+                if mode == 'Hold' or mode == 'Toggle' or mode == 'Always' then
+                    obj:Set(mode)
+                end
+            elseif isKeyFlag(flag) then
                 obj:Set(resolveKey(value) or value)
             elseif type(value) == 'table' and value[1] and tonumber(value[1]) then
                 obj:Set(Color3.fromHSV(tonumber(value[1]) or 0, tonumber(value[2]) or 0, tonumber(value[3]) or 1))
-            else
-                obj:Set(value)
+            elseif type(value) == 'boolean' or type(value) == 'number' or type(value) == 'string' or typeof(value) == 'Color3' then
+                -- Skip bare bools on keybind objs (Linoria sometimes dumps Toggled as the flag)
+                if Library.Flags[flag .. '_KEY'] ~= nil or Library.Flags[flag .. '_KEY STATE'] ~= nil then
+                    if type(value) == 'boolean' then
+                        Library.Flags[flag] = value
+                    else
+                        obj:Set(value)
+                    end
+                else
+                    obj:Set(value)
+                end
             end
         else
             Library.Flags[flag] = value
