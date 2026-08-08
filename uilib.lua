@@ -1883,6 +1883,23 @@ function Library:Window(opts)
                 st.Transparency = 0
             end)
 
+            local function isKeyDownNow()
+                if typeof(key) ~= 'EnumItem' then return false end
+                if key.EnumType == Enum.KeyCode then
+                    local ok, down = pcall(function()
+                        return UserInputService:IsKeyDown(key)
+                    end)
+                    return ok and down == true
+                end
+                if key.EnumType == Enum.UserInputType then
+                    local ok, down = pcall(function()
+                        return UserInputService:IsMouseButtonPressed(key)
+                    end)
+                    return ok and down == true
+                end
+                return false
+            end
+
             Library:Connection(UserInputService.InputBegan, function(input, gp)
                 if state.Listening then
                     if tick() - (state.ArmedAt or 0) < 0.18 then return end
@@ -1891,7 +1908,7 @@ function Library:Window(opts)
                     applyKey(resolveKey(name) or (input.KeyCode ~= Enum.KeyCode.Unknown and input.KeyCode) or input.UserInputType)
                     return
                 end
-                if gp or not keyMatches(key, input) then return end
+                if not keyMatches(key, input) then return end
                 if mode == 'Hold' then
                     setActive(true, true)
                 elseif mode == 'Toggle' then
@@ -1930,7 +1947,17 @@ function Library:Window(opts)
                 if resolved then applyKey(resolved) end
             end
             function state:GetState()
-                return Library.Flags[flag] == true
+                if mode == 'Always' then
+                    return true
+                end
+                if mode == 'Hold' then
+                    local down = isKeyDownNow()
+                    if down ~= active then
+                        setActive(down, false)
+                    end
+                    return down
+                end
+                return active == true
             end
 
             if mode == 'Always' then setActive(true, false) end
