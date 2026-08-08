@@ -721,34 +721,46 @@ function Library:CreateCharPreview(shell, height, xOffset)
     vp.CurrentCamera = cam
 
     local overlay = Instance.new('Frame')
+    overlay.Name = 'EspOverlay'
     overlay.BackgroundTransparency = 1
-    overlay.Size = UDim2.new(1, 0, 1, 0)
-    overlay.ZIndex = 4
-    overlay.Parent = vp
+    overlay.BorderSizePixel = 0
+    overlay.ClipsDescendants = false
+    overlay.ZIndex = 20
+    overlay.Parent = panel
+
+    local function syncOverlay()
+        overlay.Position = vp.Position
+        overlay.Size = vp.Size
+    end
+    syncOverlay()
 
     local nameTag = label(overlay, {
-        text = LocalPlayer.DisplayName or LocalPlayer.Name,
+        text = LocalPlayer.Name,
         font = Theme.fontBold,
         size = 12,
         color = espColor,
         h = 16,
-        z = 5,
+        z = 22,
         x = Enum.TextXAlignment.Center,
     })
-    nameTag.Position = UDim2.new(0, 0, 0, 8)
-    nameTag.TextStrokeTransparency = 0.3
+    nameTag.Position = UDim2.new(0, 0, 0, 6)
+    nameTag.Size = UDim2.new(1, 0, 0, 16)
+    nameTag.TextTruncate = Enum.TextTruncate.None
+    nameTag.TextStrokeTransparency = 0.35
+    nameTag.TextStrokeColor3 = Color3.new(0, 0, 0)
 
     local distTag = label(overlay, {
-        text = '0m',
+        text = '3m',
         font = Theme.fontMono,
         size = 11,
         color = espColor,
         h = 14,
-        z = 5,
+        z = 22,
         x = Enum.TextXAlignment.Right,
     })
-    distTag.Position = UDim2.new(1, -40, 0, 10)
-    distTag.Size = UDim2.new(0, 32, 0, 14)
+    distTag.Position = UDim2.new(1, -40, 0, 8)
+    distTag.Size = UDim2.new(0, 34, 0, 14)
+    distTag.TextTruncate = Enum.TextTruncate.None
 
     local hpText = label(overlay, {
         text = '100/100',
@@ -756,34 +768,60 @@ function Library:CreateCharPreview(shell, height, xOffset)
         size = 10,
         color = espColor,
         h = 12,
-        z = 5,
+        z = 22,
     })
-    hpText.Position = UDim2.new(0, 10, 0, 28)
-    hpText.Size = UDim2.new(0, 60, 0, 12)
+    hpText.Position = UDim2.new(0, 8, 0, 26)
+    hpText.Size = UDim2.new(0, 64, 0, 12)
+    hpText.TextTruncate = Enum.TextTruncate.None
 
     local hpBg = Instance.new('Frame')
-    hpBg.Position = UDim2.new(0, 10, 0, 42)
+    hpBg.Position = UDim2.new(0, 8, 0, 40)
     hpBg.Size = UDim2.new(0, 70, 0, 4)
     hpBg.BackgroundColor3 = Color3.fromRGB(30, 20, 40)
     hpBg.BorderSizePixel = 0
-    hpBg.ZIndex = 5
+    hpBg.ZIndex = 22
     hpBg.Parent = overlay
     corner(hpBg, 2)
     local hpFill = Instance.new('Frame')
     hpFill.Size = UDim2.new(1, 0, 1, 0)
     hpFill.BackgroundColor3 = espColor
     hpFill.BorderSizePixel = 0
-    hpFill.ZIndex = 6
+    hpFill.ZIndex = 23
     hpFill.Parent = hpBg
     corner(hpFill, 2)
 
     local box = Instance.new('Frame')
     box.BackgroundTransparency = 1
-    box.Position = UDim2.new(0.5, -48, 0.5, -90)
-    box.Size = UDim2.new(0, 96, 0, 180)
-    box.ZIndex = 5
+    box.BorderSizePixel = 0
+    box.ZIndex = 21
     box.Parent = overlay
-    local boxStroke = stroke(box, espColor, 1.5)
+    local boxStroke = stroke(box, espColor, 1.6)
+
+    local headDot = Instance.new('Frame')
+    headDot.AnchorPoint = Vector2.new(0.5, 0.5)
+    headDot.Size = UDim2.new(0, 6, 0, 6)
+    headDot.BackgroundColor3 = espColor
+    headDot.BorderSizePixel = 0
+    headDot.ZIndex = 23
+    headDot.Parent = overlay
+    corner(headDot, 3)
+    stroke(headDot, Color3.new(0, 0, 0), 1)
+
+    local bonePool = {}
+    local function getBone(i)
+        local f = bonePool[i]
+        if not f then
+            f = Instance.new('Frame')
+            f.AnchorPoint = Vector2.new(0.5, 0.5)
+            f.BorderSizePixel = 0
+            f.BackgroundColor3 = espColor
+            f.ZIndex = 21
+            f.Parent = overlay
+            bonePool[i] = f
+        end
+        f.Visible = true
+        return f
+    end
 
     local toolTag = label(overlay, {
         text = 'UNARMED',
@@ -791,10 +829,13 @@ function Library:CreateCharPreview(shell, height, xOffset)
         size = 11,
         color = Theme.warn,
         h = 16,
-        z = 5,
+        z = 22,
         x = Enum.TextXAlignment.Center,
     })
-    toolTag.Position = UDim2.new(0, 0, 1, -22)
+    toolTag.AnchorPoint = Vector2.new(0.5, 1)
+    toolTag.Position = UDim2.new(0.5, 0, 1, -8)
+    toolTag.Size = UDim2.new(1, -12, 0, 16)
+    toolTag.TextTruncate = Enum.TextTruncate.None
 
     local footer = label(panel, {
         text = 'live · your character',
@@ -809,36 +850,117 @@ function Library:CreateCharPreview(shell, height, xOffset)
 
     local cloneModel
     local angle = 0.4
+    local BODY_PARTS = {
+        'Head', 'Torso', 'UpperTorso', 'LowerTorso', 'HumanoidRootPart',
+        'Left Arm', 'Right Arm', 'Left Leg', 'Right Leg',
+        'LeftUpperArm', 'RightUpperArm', 'LeftLowerArm', 'RightLowerArm',
+        'LeftHand', 'RightHand', 'LeftUpperLeg', 'RightUpperLeg', 'LeftLowerLeg', 'RightLowerLeg',
+        'LeftFoot', 'RightFoot',
+    }
+    local BONE_PAIRS = {
+        { 'Head', 'UpperTorso' }, { 'Head', 'Torso' },
+        { 'UpperTorso', 'LowerTorso' },
+        { 'UpperTorso', 'LeftUpperArm' }, { 'UpperTorso', 'RightUpperArm' },
+        { 'Torso', 'Left Arm' }, { 'Torso', 'Right Arm' },
+        { 'Torso', 'Left Leg' }, { 'Torso', 'Right Leg' },
+        { 'LowerTorso', 'LeftUpperLeg' }, { 'LowerTorso', 'RightUpperLeg' },
+        { 'LeftUpperArm', 'LeftLowerArm' }, { 'RightUpperArm', 'RightLowerArm' },
+        { 'LeftLowerArm', 'LeftHand' }, { 'RightLowerArm', 'RightHand' },
+        { 'LeftUpperLeg', 'LeftLowerLeg' }, { 'RightUpperLeg', 'RightLowerLeg' },
+        { 'LeftLowerLeg', 'LeftFoot' }, { 'RightLowerLeg', 'RightFoot' },
+    }
 
-    local function updateEspBox()
+    local function project(worldPos)
+        local v = cam:WorldToViewportPoint(worldPos)
+        return Vector2.new(v.X, v.Y), v.Z > 0.05
+    end
+
+    local function placeBone(frame, a, b)
+        local mid = (a + b) * 0.5
+        local delta = b - a
+        local len = delta.Magnitude
+        if len < 1 then
+            frame.Visible = false
+            return
+        end
+        frame.Size = UDim2.fromOffset(math.max(2, len), 2)
+        frame.Position = UDim2.fromOffset(mid.X, mid.Y)
+        frame.Rotation = math.deg(math.atan2(delta.Y, delta.X))
+        frame.BackgroundColor3 = espColor
+        frame.Visible = true
+    end
+
+    local function updateEspOverlay()
         if not cloneModel or not cam then return end
-        local ok, cf, size = pcall(function()
-            return cloneModel:GetBoundingBox()
-        end)
-        if not ok or typeof(cf) ~= 'CFrame' or typeof(size) ~= 'Vector3' then return end
-        local hx, hy, hz = size.X * 0.5, size.Y * 0.5, size.Z * 0.5
+        syncOverlay()
         local minX, minY = math.huge, math.huge
         local maxX, maxY = -math.huge, -math.huge
         local any = false
-        for _, ox in ipairs({ -1, 1 }) do
-            for _, oy in ipairs({ -1, 1 }) do
-                for _, oz in ipairs({ -1, 1 }) do
-                    local world = (cf * CFrame.new(ox * hx, oy * hy, oz * hz)).Position
-                    local v = cam:WorldToViewportPoint(world)
-                    if v.Z > 0 then
-                        any = true
-                        if v.X < minX then minX = v.X end
-                        if v.Y < minY then minY = v.Y end
-                        if v.X > maxX then maxX = v.X end
-                        if v.Y > maxY then maxY = v.Y end
+        local partMap = {}
+        for _, n in ipairs(BODY_PARTS) do
+            local p = cloneModel:FindFirstChild(n, true)
+            if p and p:IsA('BasePart') then
+                partMap[n] = p
+                local cf, sz = p.CFrame, p.Size * 0.5
+                for _, ox in ipairs({ -1, 1 }) do
+                    for _, oy in ipairs({ -1, 1 }) do
+                        for _, oz in ipairs({ -1, 1 }) do
+                            local world = (cf * CFrame.new(ox * sz.X, oy * sz.Y, oz * sz.Z)).Position
+                            local screen, ok = project(world)
+                            if ok then
+                                any = true
+                                if screen.X < minX then minX = screen.X end
+                                if screen.Y < minY then minY = screen.Y end
+                                if screen.X > maxX then maxX = screen.X end
+                                if screen.Y > maxY then maxY = screen.Y end
+                            end
+                        end
                     end
                 end
             end
         end
-        if not any then return end
-        local padPx = 4
-        box.Position = UDim2.new(0, math.floor(minX - padPx + 0.5), 0, math.floor(minY - padPx + 0.5))
-        box.Size = UDim2.new(0, math.max(8, math.floor(maxX - minX + padPx * 2 + 0.5)), 0, math.max(8, math.floor(maxY - minY + padPx * 2 + 0.5)))
+
+        if any then
+            local padPx = 3
+            box.Visible = true
+            box.Position = UDim2.fromOffset(math.floor(minX - padPx), math.floor(minY - padPx))
+            box.Size = UDim2.fromOffset(
+                math.max(10, math.floor(maxX - minX + padPx * 2)),
+                math.max(10, math.floor(maxY - minY + padPx * 2))
+            )
+            boxStroke.Color = espColor
+            boxStroke.Transparency = 0.1 + 0.12 * math.sin(tick() * 3)
+        else
+            box.Visible = false
+        end
+
+        local head = partMap.Head
+        if head then
+            local hs, ok = project(head.Position + Vector3.new(0, head.Size.Y * 0.35, 0))
+            headDot.Visible = ok
+            if ok then
+                headDot.Position = UDim2.fromOffset(hs.X, hs.Y)
+                headDot.BackgroundColor3 = espColor
+            end
+        else
+            headDot.Visible = false
+        end
+
+        local used = 0
+        for _, pair in ipairs(BONE_PAIRS) do
+            local aPart, bPart = partMap[pair[1]], partMap[pair[2]]
+            if aPart and bPart then
+                local a, aOk = project(aPart.Position)
+                local b, bOk = project(bPart.Position)
+                if aOk and bOk then
+                    used += 1
+                    placeBone(getBone(used), a, b)
+                end
+            end
+        end
+        for i = used + 1, #bonePool do
+            bonePool[i].Visible = false
+        end
     end
 
     local function stripClone(model)
@@ -858,51 +980,6 @@ function Library:CreateCharPreview(shell, height, xOffset)
         end
     end
 
-    local function addSkeleton(model)
-        local parts = {}
-        for _, n in ipairs({ 'Head', 'Torso', 'UpperTorso', 'LowerTorso', 'Left Arm', 'Right Arm', 'Left Leg', 'Right Leg', 'LeftUpperArm', 'RightUpperArm', 'LeftLowerArm', 'RightLowerArm', 'LeftUpperLeg', 'RightUpperLeg', 'LeftLowerLeg', 'RightLowerLeg', 'HumanoidRootPart' }) do
-            local p = model:FindFirstChild(n, true)
-            if p and p:IsA('BasePart') then parts[n] = p end
-        end
-        local function joint(a, b)
-            if not a or not b then return end
-            local att0 = Instance.new('Attachment')
-            att0.Parent = a
-            local att1 = Instance.new('Attachment')
-            att1.Parent = b
-            local beam = Instance.new('Beam')
-            beam.Attachment0 = att0
-            beam.Attachment1 = att1
-            beam.Color = ColorSequence.new(espColor)
-            beam.Width0 = 0.05
-            beam.Width1 = 0.05
-            beam.FaceCamera = true
-            beam.LightEmission = 0.6
-            beam.Parent = a
-        end
-        local torso = parts.UpperTorso or parts.Torso
-        local head = parts.Head
-        joint(head, torso)
-        joint(torso, parts.LeftUpperArm or parts['Left Arm'])
-        joint(torso, parts.RightUpperArm or parts['Right Arm'])
-        joint(torso, parts.LeftUpperLeg or parts['Left Leg'])
-        joint(torso, parts.RightUpperLeg or parts['Right Leg'])
-        joint(parts.LeftUpperArm, parts.LeftLowerArm)
-        joint(parts.RightUpperArm, parts.RightLowerArm)
-        joint(parts.LeftUpperLeg, parts.LeftLowerLeg)
-        joint(parts.RightUpperLeg, parts.RightLowerLeg)
-        if torso then
-            local sb = Instance.new('SelectionBox')
-            sb.Adornee = torso
-            sb.Color3 = espColor
-            sb.LineThickness = 0.025
-            sb.SurfaceTransparency = 1
-            sb.Parent = torso
-        end
-    end
-
-    local focusPos = Vector3.new(0, 2.6, 0)
-
     local function recenter(model)
         local root = model.PrimaryPart
             or model:FindFirstChild('HumanoidRootPart')
@@ -918,7 +995,6 @@ function Library:CreateCharPreview(shell, height, xOffset)
                 p.CFrame = offset * p.CFrame
             end
         end
-        focusPos = root.Position + Vector3.new(0, 1.1, 0)
     end
 
     local function refreshHud()
@@ -934,7 +1010,7 @@ function Library:CreateCharPreview(shell, height, xOffset)
         toolTag.Text = string.upper(tool)
         hpText.Text = math.floor(hum.Health + 0.5) .. '/' .. math.max(1, math.floor(hum.MaxHealth + 0.5))
         hpFill.Size = UDim2.new(math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1), 0, 1, 0)
-        nameTag.Text = LocalPlayer.DisplayName or LocalPlayer.Name
+        nameTag.Text = tostring(LocalPlayer.Name)
         distTag.Text = '3m'
     end
 
@@ -959,7 +1035,6 @@ function Library:CreateCharPreview(shell, height, xOffset)
         clone.Parent = world
         cloneModel = clone
         recenter(clone)
-        addSkeleton(clone)
         refreshHud()
     end
 
@@ -982,13 +1057,11 @@ function Library:CreateCharPreview(shell, height, xOffset)
         angle += dt * 0.45
         local dist = 6.2
         local focus = cloneModel.PrimaryPart.Position + Vector3.new(0, 1.1, 0)
-
         local orbit = CFrame.new(focus)
             * CFrame.Angles(0, angle, 0)
             * CFrame.new(0, 1.35, dist)
         cam.CFrame = CFrame.lookAt(orbit.Position, focus, Vector3.yAxis)
-        updateEspBox()
-        boxStroke.Transparency = 0.15 + 0.15 * math.sin(tick() * 3)
+        updateEspOverlay()
     end)
 
     Library.CharPreview = {
@@ -2015,9 +2088,10 @@ function Library:Window(opts)
         accentBar.ZIndex = 7
         accentBar.Parent = pageBtn
         corner(accentBar, 2)
-        local iconL = label(pageBtn, { text = icon, font = Theme.fontMono, size = 12, color = Theme.textMute, h = 32, z = 7, x = Enum.TextXAlignment.Center })
-        iconL.Position = UDim2.new(0, 12, 0, 0)
-        iconL.Size = UDim2.new(0, 16, 1, 0)
+        local iconL = label(pageBtn, { text = icon, font = Theme.fontMono, size = 13, color = Theme.textMute, h = 32, z = 7, x = Enum.TextXAlignment.Center })
+        iconL.Position = UDim2.new(0, 10, 0, 0)
+        iconL.Size = UDim2.new(0, 18, 1, 0)
+        iconL.TextTruncate = Enum.TextTruncate.None
         local nameL = label(pageBtn, { text = pageName, size = 12, color = Theme.textDim, h = 32, z = 7 })
         nameL.Position = UDim2.new(0, 32, 0, 0)
         nameL.Size = UDim2.new(1, -40, 1, 0)
