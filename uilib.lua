@@ -425,17 +425,20 @@ function Library:CreateWatermark(opts)
     return wm
 end
 
-function Library:Watermark(properties)
+function Library:EnsureWatermark(properties)
     properties = properties or {}
-    if Library.Watermark and Library.Watermark.Frame and Library.Watermark.Frame.Parent then
+    if Library.Watermark and type(Library.Watermark) == 'table' and Library.Watermark.Frame and Library.Watermark.Frame.Parent then
         if properties.Name then Library.Watermark:UpdateText(properties.Name) end
         return Library.Watermark
     end
-    return Library:CreateWatermark({ Title = properties.Name or 'Bap Delta' })
+    return Library:CreateWatermark({ Title = properties.Name or properties.Title or 'Bap Delta' })
 end
 
 function Library:CreateTargetHUD(opts)
     opts = opts or {}
+    if Library.TargetHUD and Library.TargetHUD.Frame and Library.TargetHUD.Frame.Parent then
+        return Library.TargetHUD
+    end
     local gui = Library.ScreenGUI
     if not gui then return end
     local frame = Instance.new('Frame')
@@ -445,7 +448,7 @@ function Library:CreateTargetHUD(opts)
     frame.Size = UDim2.new(0, 340, 0, 104)
     frame.BackgroundColor3 = Theme.bg
     frame.BorderSizePixel = 0
-    frame.Visible = opts.Visible ~= false
+    frame.Visible = opts.Visible == true
     frame.ZIndex = 210
     frame.Parent = gui
     corner(frame, 9)
@@ -459,17 +462,19 @@ function Library:CreateTargetHUD(opts)
     inline.Parent = frame
     corner(inline, 8)
     local top = Instance.new('Frame')
+    top.Name = 'Accent'
     top.Size = UDim2.new(1, 0, 0, 2)
     top.BackgroundColor3 = Theme.accent
     top.BorderSizePixel = 0
     top.ZIndex = 212
     top.Parent = inline
+    Library.ThemeObjects[#Library.ThemeObjects + 1] = top
     local avatar = Instance.new('ImageLabel')
     avatar.BackgroundColor3 = Theme.bgPanel
     avatar.BorderSizePixel = 0
     avatar.Position = UDim2.new(0, 10, 0, 12)
     avatar.Size = UDim2.new(0, 52, 0, 52)
-    avatar.Image = string.format('rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150', LocalPlayer.UserId)
+    avatar.Image = ''
     avatar.ZIndex = 213
     avatar.Parent = inline
     corner(avatar, 8)
@@ -479,15 +484,15 @@ function Library:CreateTargetHUD(opts)
         l.Size = size
         return l
     end
-    local nameL = mk(UDim2.new(0, 74, 0, 10), UDim2.new(0, 160, 0, 14), 'user  demo_target', Theme.text)
+    local nameL = mk(UDim2.new(0, 74, 0, 10), UDim2.new(0, 160, 0, 14), 'user  —', Theme.text)
     nameL.Font = Theme.fontBold
-    local distL = mk(UDim2.new(0, 230, 0, 10), UDim2.new(0, 100, 0, 14), 'dist  42m', Theme.textDim, Enum.TextXAlignment.Right)
-    mk(UDim2.new(0, 74, 0, 28), UDim2.new(0, 160, 0, 14), 'kd  2.40 (12 / 5)', Theme.textDim)
-    mk(UDim2.new(0, 230, 0, 28), UDim2.new(0, 100, 0, 14), 'status  visible', Theme.success, Enum.TextXAlignment.Right)
-    mk(UDim2.new(0, 74, 0, 46), UDim2.new(0, 160, 0, 14), 'playtime  18h', Theme.textDim)
-    mk(UDim2.new(0, 230, 0, 46), UDim2.new(0, 100, 0, 14), 'reports  0', Theme.textDim, Enum.TextXAlignment.Right)
-    mk(UDim2.new(0, 74, 0, 64), UDim2.new(0, 160, 0, 14), 'tool  SVD', Theme.textDim)
-    mk(UDim2.new(0, 230, 0, 64), UDim2.new(0, 100, 0, 14), 'visor  off', Theme.textDim, Enum.TextXAlignment.Right)
+    local distL = mk(UDim2.new(0, 230, 0, 10), UDim2.new(0, 100, 0, 14), 'dist  —', Theme.textDim, Enum.TextXAlignment.Right)
+    local kdL = mk(UDim2.new(0, 74, 0, 28), UDim2.new(0, 160, 0, 14), 'kd  —', Theme.textDim)
+    local statusL = mk(UDim2.new(0, 230, 0, 28), UDim2.new(0, 100, 0, 14), 'status  —', Theme.textDim, Enum.TextXAlignment.Right)
+    local playL = mk(UDim2.new(0, 74, 0, 46), UDim2.new(0, 160, 0, 14), 'playtime  —', Theme.textDim)
+    local reportsL = mk(UDim2.new(0, 230, 0, 46), UDim2.new(0, 100, 0, 14), 'reports  0', Theme.textDim, Enum.TextXAlignment.Right)
+    local toolL = mk(UDim2.new(0, 74, 0, 64), UDim2.new(0, 160, 0, 14), 'tool  —', Theme.textDim)
+    local visorL = mk(UDim2.new(0, 230, 0, 64), UDim2.new(0, 100, 0, 14), 'visor  —', Theme.textDim, Enum.TextXAlignment.Right)
     local hpBg = Instance.new('Frame')
     hpBg.Position = UDim2.new(0, 10, 1, -16)
     hpBg.Size = UDim2.new(1, -20, 0, 8)
@@ -497,33 +502,79 @@ function Library:CreateTargetHUD(opts)
     hpBg.Parent = inline
     corner(hpBg, 3)
     local hpFill = Instance.new('Frame')
-    hpFill.Size = UDim2.new(0.72, 0, 1, 0)
+    hpFill.Size = UDim2.new(0, 0, 1, 0)
     hpFill.BackgroundColor3 = Theme.success
     hpFill.BorderSizePixel = 0
     hpFill.ZIndex = 214
     hpFill.Parent = hpBg
     corner(hpFill, 3)
-    task.spawn(function()
-        local t = 0
-        while frame.Parent do
-            t += task.wait(0.05)
-            local pct = 0.55 + 0.2 * math.sin(t * 1.4)
-            hpFill.Size = UDim2.new(pct, 0, 1, 0)
-            distL.Text = string.format('dist  %dm', 30 + math.floor(20 * (0.5 + 0.5 * math.sin(t))))
-        end
-    end)
-    Library.TargetHUD = { Frame = frame, SetVisible = function(_, v) frame.Visible = v == true end }
-    return Library.TargetHUD
+    local hpText = label(inline, {
+        text = '',
+        font = Theme.fontMono,
+        size = 10,
+        color = Theme.textMute,
+        h = 12,
+        z = 215,
+        x = Enum.TextXAlignment.Right,
+    })
+    hpText.Position = UDim2.new(1, -70, 1, -30)
+    hpText.Size = UDim2.new(0, 60, 0, 12)
+
+    local hud = {
+        Frame = frame,
+        SetVisible = function(_, v)
+            frame.Visible = v == true
+        end,
+        Update = function(_, data)
+            data = data or {}
+            if data.Visible == false then
+                frame.Visible = false
+                return
+            end
+            if data.Name then nameL.Text = 'user  ' .. tostring(data.Name) end
+            if data.Distance then distL.Text = 'dist  ' .. tostring(data.Distance) end
+            if data.KD then kdL.Text = tostring(data.KD) end
+            if data.Status then
+                statusL.Text = 'status  ' .. tostring(data.Status)
+                statusL.TextColor3 = data.StatusColor or (tostring(data.Status) == 'visible' and Theme.success or Theme.danger)
+            end
+            if data.Playtime then playL.Text = 'playtime  ' .. tostring(data.Playtime) end
+            if data.Reports ~= nil then
+                reportsL.Text = 'reports  ' .. tostring(data.Reports)
+                reportsL.TextColor3 = (tonumber(data.Reports) or 0) > 0 and Theme.danger or Theme.textDim
+            end
+            if data.Tool then toolL.Text = 'tool  ' .. tostring(data.Tool) end
+            if data.Visor then
+                visorL.Text = 'visor  ' .. tostring(data.Visor)
+                visorL.TextColor3 = tostring(data.Visor) == 'on' and Theme.success or Theme.textDim
+            end
+            if data.Health and data.MaxHealth then
+                local pct = math.clamp((tonumber(data.Health) or 0) / math.max(tonumber(data.MaxHealth) or 1, 1), 0, 1)
+                hpFill.Size = UDim2.new(pct, 0, 1, 0)
+                hpFill.BackgroundColor3 = pct > 0.5 and Theme.success or (pct > 0.25 and Theme.warn or Theme.danger)
+                hpText.Text = string.format('%d/%d', math.floor(data.Health), math.floor(data.MaxHealth))
+            end
+            if data.UserId then
+                avatar.Image = string.format('rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150', data.UserId)
+            end
+            frame.Visible = true
+        end,
+    }
+    Library.TargetHUD = hud
+    return hud
 end
 
 function Library:CreateSkinBrowser()
+    if Library.SkinBrowser and Library.SkinBrowser.Frame and Library.SkinBrowser.Frame.Parent then
+        return Library.SkinBrowser
+    end
     local gui = Library.ScreenGUI
     if not gui then return end
     local panel = Instance.new('Frame')
     panel.Name = 'SkinBrowser'
     panel.AnchorPoint = Vector2.new(1, 0.5)
     panel.Position = UDim2.new(1, -16, 0.5, 0)
-    panel.Size = UDim2.new(0, 560, 0, 380)
+    panel.Size = UDim2.new(0, 640, 0, 420)
     panel.BackgroundColor3 = Theme.bg
     panel.BorderSizePixel = 0
     panel.Visible = false
@@ -533,20 +584,32 @@ function Library:CreateSkinBrowser()
     corner(panel, 10)
     stroke(panel, Theme.stroke, 1)
     local top = Instance.new('Frame')
+    top.Name = 'Accent'
     top.Size = UDim2.new(1, 0, 0, 2)
     top.BackgroundColor3 = Theme.accent
     top.BorderSizePixel = 0
     top.ZIndex = 231
     top.Parent = panel
+    Library.ThemeObjects[#Library.ThemeObjects + 1] = top
     local header = Instance.new('Frame')
     header.Position = UDim2.new(0, 0, 0, 2)
-    header.Size = UDim2.new(1, 0, 0, 40)
+    header.Size = UDim2.new(1, 0, 0, 44)
     header.BackgroundColor3 = Theme.bgDeep
     header.BorderSizePixel = 0
     header.ZIndex = 231
     header.Parent = panel
     makeDraggable(header, panel)
-    label(header, { text = 'skin changer', font = Theme.fontBold, size = 14, color = Theme.text, h = 40, z = 232 }).Position = UDim2.new(0, 14, 0, 0)
+    label(header, { text = 'skin changer', font = Theme.fontBold, size = 14, color = Theme.text, h = 22, z = 232 }).Position = UDim2.new(0, 14, 0, 4)
+    local statusL = label(header, {
+        text = 'select an item, then a skin',
+        font = Theme.fontMono,
+        size = 11,
+        color = Theme.textMute,
+        h = 16,
+        z = 232,
+    })
+    statusL.Position = UDim2.new(0, 14, 0, 24)
+    statusL.Size = UDim2.new(1, -100, 0, 16)
     local close = Instance.new('TextButton')
     close.AutoButtonColor = false
     close.AnchorPoint = Vector2.new(1, 0.5)
@@ -561,30 +624,38 @@ function Library:CreateSkinBrowser()
     close.Parent = header
     corner(close, 6)
     stroke(close, Theme.strokeSoft, 1)
-    local body = label(panel, {
-        text = 'Pick guns / knife / clothes here once wired.\n(visual shell for now)',
-        font = Theme.fontMono,
-        size = 12,
-        color = Theme.textMute,
-        h = 60,
-        z = 232,
-        x = Enum.TextXAlignment.Center,
-    })
-    body.Position = UDim2.new(0, 20, 0, 80)
-    body.Size = UDim2.new(1, -40, 0, 60)
-    body.TextWrapped = true
+    local content = Instance.new('Frame')
+    content.Name = 'Content'
+    content.BackgroundTransparency = 1
+    content.Position = UDim2.new(0, 0, 0, 46)
+    content.Size = UDim2.new(1, 0, 1, -46)
+    content.ClipsDescendants = true
+    content.ZIndex = 232
+    content.Parent = panel
     local browser = {
+        Frame = panel,
+        Content = content,
+        Status = statusL,
         Open = function()
             panel.Visible = true
-            panel.Size = UDim2.new(0, 540, 0, 360)
-            tween(panel, { Size = UDim2.new(0, 560, 0, 380) }, 0.2, Enum.EasingStyle.Back)
+            panel.Size = UDim2.new(0, 620, 0, 400)
+            tween(panel, { Size = UDim2.new(0, 640, 0, 420) }, 0.2, Enum.EasingStyle.Back)
         end,
-        Close = function() panel.Visible = false end,
-        IsOpen = function() return panel.Visible end,
+        Close = function()
+            panel.Visible = false
+        end,
+        IsOpen = function()
+            return panel.Visible
+        end,
+        SetStatus = function(_, text)
+            statusL.Text = tostring(text or '')
+        end,
     }
     close.MouseButton1Click:Connect(function()
         browser.Close()
-        if Library.Flags.SkinChanger_obj then pcall(function() Library.Flags.SkinChanger_obj:Set(false) end) end
+        if Library.Flags.SkinChanger_obj then
+            pcall(function() Library.Flags.SkinChanger_obj:Set(false) end)
+        end
     end)
     Library.SkinBrowser = browser
     return browser
