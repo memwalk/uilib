@@ -211,23 +211,16 @@ local function popBlur()
 end
 local function clearBlur()
     blurState.depth = 0
-    if blurState.effect then
-        local b = blurState.effect
-        blurState.effect = nil
-        pcall(function()
-            if b.Parent then
-                tween(b, { Size = 0 }, 0.18)
-                task.delay(0.2, function()
-                    if b.Parent then b:Destroy() end
-                end)
-            end
-        end)
-    end
+    blurState.effect = nil
     pcall(function()
-        local leftover = Lighting:FindFirstChild('BapDeltaUIBlur')
-        if leftover then leftover:Destroy() end
+        for _, c in ipairs(Lighting:GetChildren()) do
+            if c:IsA('BlurEffect') and (c.Name == 'BapDeltaUIBlur' or string.find(c.Name, 'BapDelta', 1, true)) then
+                c:Destroy()
+            end
+        end
     end)
 end
+Library.ClearBlur = clearBlur
 
 local function corner(parent, r)
     local c = Instance.new('UICorner')
@@ -1044,12 +1037,32 @@ function Library:CreateCharPreview(shell, height, xOffset)
 
         local vpSize = vp.AbsoluteSize
         local boxPos, boxSize
-        local boxCFrame, worldBoxSize
-        local okBox = pcall(function()
-            boxCFrame, worldBoxSize = cloneModel:GetBoundingBox()
-        end)
-        if okBox and typeof(boxCFrame) == 'CFrame' and typeof(worldBoxSize) == 'Vector3' then
-            local half = worldBoxSize * 0.5
+        local minWX, minWY, minWZ = math.huge, math.huge, math.huge
+        local maxWX, maxWY, maxWZ = -math.huge, -math.huge, -math.huge
+        local bodyCount = 0
+        for _, n in ipairs(BOX_PARTS) do
+            local p = partMap[n]
+            if p then
+                bodyCount += 1
+                local cf, sz = p.CFrame, p.Size * 0.5
+                for _, ox in ipairs({ -1, 1 }) do
+                    for _, oy in ipairs({ -1, 1 }) do
+                        for _, oz in ipairs({ -1, 1 }) do
+                            local w = (cf * CFrame.new(ox * sz.X, oy * sz.Y, oz * sz.Z)).Position
+                            if w.X < minWX then minWX = w.X end
+                            if w.Y < minWY then minWY = w.Y end
+                            if w.Z < minWZ then minWZ = w.Z end
+                            if w.X > maxWX then maxWX = w.X end
+                            if w.Y > maxWY then maxWY = w.Y end
+                            if w.Z > maxWZ then maxWZ = w.Z end
+                        end
+                    end
+                end
+            end
+        end
+        if bodyCount >= 2 and minWX ~= math.huge then
+            local boxCFrame = CFrame.new((minWX + maxWX) * 0.5, (minWY + maxWY) * 0.5, (minWZ + maxWZ) * 0.5)
+            local half = Vector3.new(maxWX - minWX, maxWY - minWY, maxWZ - minWZ) * 0.5
             local minX, minY = math.huge, math.huge
             local maxX, maxY = -math.huge, -math.huge
             local validCount = 0
@@ -2911,6 +2924,11 @@ function Library:PlayLoading(opts)
     overlay:Destroy()
     if ownedBlur then
         popBlur()
+    end
+    if not Library.Open then
+        clearBlur()
+    elseif Library._uiBlurOn and blurState.effect and blurState.effect.Parent then
+        tween(blurState.effect, { Size = 18 }, 0.2)
     end
 end
 
