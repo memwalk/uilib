@@ -663,7 +663,11 @@ end
 
 function Library:CreateCharPreview(shell, height, xOffset)
     local PREVIEW_W = 230
-    local espColor = Theme.esp
+    local ESP_DEFAULT = Theme.esp
+    local TEXT_SIZE = 14
+    local TEXT_PAD = 2
+    local SIDE_GAP = 6
+    local BOX_PAD_X, BOX_PAD_Y = 8, 6
 
     local panel = Instance.new('Frame')
     panel.Name = 'CharPreview'
@@ -696,14 +700,14 @@ function Library:CreateCharPreview(shell, height, xOffset)
     accent.ZIndex = 3
     accent.Parent = panel
 
-    local head = Instance.new('Frame')
-    head.Position = UDim2.new(0, 0, 0, 2)
-    head.Size = UDim2.new(1, 0, 0, 34)
-    head.BackgroundColor3 = Theme.bgDeep
-    head.BorderSizePixel = 0
-    head.ZIndex = 3
-    head.Parent = panel
-    label(head, { text = 'ESP PREVIEW', font = Theme.fontMono, size = 11, color = Theme.textDim, h = 34, z = 4, x = Enum.TextXAlignment.Center })
+    local headBar = Instance.new('Frame')
+    headBar.Position = UDim2.new(0, 0, 0, 2)
+    headBar.Size = UDim2.new(1, 0, 0, 34)
+    headBar.BackgroundColor3 = Theme.bgDeep
+    headBar.BorderSizePixel = 0
+    headBar.ZIndex = 3
+    headBar.Parent = panel
+    label(headBar, { text = 'ESP PREVIEW', font = Theme.fontMono, size = 11, color = Theme.textDim, h = 34, z = 4, x = Enum.TextXAlignment.Center })
 
     local vp = Instance.new('ViewportFrame')
     vp.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
@@ -734,111 +738,98 @@ function Library:CreateCharPreview(shell, height, xOffset)
     end
     syncOverlay()
 
-    local nameTag = label(overlay, {
-        text = LocalPlayer.Name,
-        font = Theme.fontBold,
-        size = 12,
-        color = espColor,
-        h = 16,
-        z = 22,
-        x = Enum.TextXAlignment.Center,
-    })
-    nameTag.Position = UDim2.new(0, 0, 0, 6)
-    nameTag.Size = UDim2.new(1, 0, 0, 16)
-    nameTag.TextTruncate = Enum.TextTruncate.None
-    nameTag.TextStrokeTransparency = 0.35
-    nameTag.TextStrokeColor3 = Color3.new(0, 0, 0)
+    local function makeEspText(name)
+        local lbl = Instance.new('TextLabel')
+        lbl.Name = name
+        lbl.BackgroundTransparency = 1
+        lbl.BorderSizePixel = 0
+        lbl.Font = Enum.Font.GothamBold
+        lbl.TextSize = TEXT_SIZE
+        lbl.TextColor3 = Color3.new(1, 1, 1)
+        lbl.TextStrokeTransparency = 1
+        lbl.RichText = false
+        lbl.TextScaled = false
+        lbl.TextWrapped = false
+        lbl.TextXAlignment = Enum.TextXAlignment.Center
+        lbl.TextYAlignment = Enum.TextYAlignment.Top
+        lbl.AnchorPoint = Vector2.new(0.5, 0)
+        lbl.AutomaticSize = Enum.AutomaticSize.XY
+        lbl.Size = UDim2.fromOffset(0, 18)
+        lbl.ZIndex = 24
+        lbl.Visible = false
+        lbl.Parent = overlay
+        local s = Instance.new('UIStroke')
+        s.Name = 'Outline'
+        s.Color = Color3.new(0, 0, 0)
+        s.Thickness = 1.35
+        s.Transparency = 0
+        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+        s.LineJoinMode = Enum.LineJoinMode.Round
+        s.Parent = lbl
+        return lbl
+    end
 
-    local distTag = label(overlay, {
-        text = '3m',
-        font = Theme.fontMono,
-        size = 11,
-        color = espColor,
-        h = 14,
-        z = 22,
-        x = Enum.TextXAlignment.Right,
-    })
-    distTag.Position = UDim2.new(1, -40, 0, 8)
-    distTag.Size = UDim2.new(0, 34, 0, 14)
-    distTag.TextTruncate = Enum.TextTruncate.None
+    local nameTag = makeEspText('Name')
+    local visTag = makeEspText('Visible')
+    local distTag = makeEspText('Distance')
+    local hpText = makeEspText('Health')
+    local toolTag = makeEspText('Weapon')
+    local attTag = makeEspText('Attachments')
 
-    local hpText = label(overlay, {
-        text = '100/100',
-        font = Theme.fontMono,
-        size = 10,
-        color = espColor,
-        h = 12,
-        z = 22,
-    })
-    hpText.Position = UDim2.new(0, 8, 0, 26)
-    hpText.Size = UDim2.new(0, 64, 0, 12)
-    hpText.TextTruncate = Enum.TextTruncate.None
+    local boxOuter = Instance.new('Frame')
+    boxOuter.BackgroundTransparency = 1
+    boxOuter.BorderSizePixel = 0
+    boxOuter.ZIndex = 21
+    boxOuter.Visible = false
+    boxOuter.Parent = overlay
+    local boxOuterStroke = stroke(boxOuter, Color3.new(0, 0, 0), 3)
+
+    local boxInner = Instance.new('Frame')
+    boxInner.BackgroundTransparency = 1
+    boxInner.BorderSizePixel = 0
+    boxInner.ZIndex = 22
+    boxInner.Visible = false
+    boxInner.Parent = overlay
+    local boxInnerStroke = stroke(boxInner, ESP_DEFAULT, 1)
 
     local hpBg = Instance.new('Frame')
-    hpBg.Position = UDim2.new(0, 8, 0, 40)
-    hpBg.Size = UDim2.new(0, 70, 0, 4)
-    hpBg.BackgroundColor3 = Color3.fromRGB(30, 20, 40)
     hpBg.BorderSizePixel = 0
-    hpBg.ZIndex = 22
+    hpBg.BackgroundColor3 = Color3.new(0, 0, 0)
+    hpBg.ZIndex = 23
+    hpBg.Visible = false
     hpBg.Parent = overlay
-    corner(hpBg, 2)
     local hpFill = Instance.new('Frame')
-    hpFill.Size = UDim2.new(1, 0, 1, 0)
-    hpFill.BackgroundColor3 = espColor
     hpFill.BorderSizePixel = 0
-    hpFill.ZIndex = 23
+    hpFill.BackgroundColor3 = Color3.fromRGB(80, 180, 255)
+    hpFill.ZIndex = 24
     hpFill.Parent = hpBg
-    corner(hpFill, 2)
-
-    local box = Instance.new('Frame')
-    box.BackgroundTransparency = 1
-    box.BorderSizePixel = 0
-    box.ZIndex = 21
-    box.Parent = overlay
-    local boxStroke = stroke(box, espColor, 1.6)
-
-    local headDot = Instance.new('Frame')
-    headDot.AnchorPoint = Vector2.new(0.5, 0.5)
-    headDot.Size = UDim2.new(0, 6, 0, 6)
-    headDot.BackgroundColor3 = espColor
-    headDot.BorderSizePixel = 0
-    headDot.ZIndex = 23
-    headDot.Parent = overlay
-    corner(headDot, 3)
-    stroke(headDot, Color3.new(0, 0, 0), 1)
 
     local bonePool = {}
     local function getBone(i)
-        local f = bonePool[i]
-        if not f then
-            f = Instance.new('Frame')
-            f.AnchorPoint = Vector2.new(0.5, 0.5)
-            f.BorderSizePixel = 0
-            f.BackgroundColor3 = espColor
-            f.ZIndex = 21
-            f.Parent = overlay
-            bonePool[i] = f
+        local pair = bonePool[i]
+        if not pair then
+            local outer = Instance.new('Frame')
+            outer.AnchorPoint = Vector2.new(0.5, 0.5)
+            outer.BorderSizePixel = 0
+            outer.BackgroundColor3 = Color3.new(0, 0, 0)
+            outer.ZIndex = 21
+            outer.Visible = false
+            outer.Parent = overlay
+            local inner = Instance.new('Frame')
+            inner.AnchorPoint = Vector2.new(0.5, 0.5)
+            inner.BorderSizePixel = 0
+            inner.BackgroundColor3 = ESP_DEFAULT
+            inner.ZIndex = 22
+            inner.Visible = false
+            inner.Parent = overlay
+            pair = { outer = outer, inner = inner }
+            bonePool[i] = pair
         end
-        f.Visible = true
-        return f
+        return pair
     end
 
-    local toolTag = label(overlay, {
-        text = 'UNARMED',
-        font = Theme.fontBold,
-        size = 11,
-        color = Theme.warn,
-        h = 16,
-        z = 22,
-        x = Enum.TextXAlignment.Center,
-    })
-    toolTag.AnchorPoint = Vector2.new(0.5, 1)
-    toolTag.Position = UDim2.new(0.5, 0, 1, -8)
-    toolTag.Size = UDim2.new(1, -12, 0, 16)
-    toolTag.TextTruncate = Enum.TextTruncate.None
-
     local footer = label(panel, {
-        text = 'live · your character',
+        text = 'live · mirrors your ESP settings',
         font = Theme.fontMono,
         size = 10,
         color = Theme.textMute,
@@ -849,64 +840,175 @@ function Library:CreateCharPreview(shell, height, xOffset)
     footer.Position = UDim2.new(0, 0, 1, -28)
 
     local cloneModel
-    local angle = 0.4
-    local BODY_PARTS = {
+    local chamsHighlight
+    local angle = 0.35
+    local liveHp, liveMaxHp, liveWeapon, liveName = 100, 100, 'Unarmed', LocalPlayer.DisplayName or LocalPlayer.Name
+
+    local R15_BONES = {
+        { 'Head', 'UpperTorso' },
+        { 'UpperTorso', 'LowerTorso' },
+        { 'UpperTorso', 'LeftUpperArm' },
+        { 'LeftUpperArm', 'LeftLowerArm' },
+        { 'LeftLowerArm', 'LeftHand' },
+        { 'UpperTorso', 'RightUpperArm' },
+        { 'RightUpperArm', 'RightLowerArm' },
+        { 'RightLowerArm', 'RightHand' },
+        { 'LowerTorso', 'LeftUpperLeg' },
+        { 'LeftUpperLeg', 'LeftLowerLeg' },
+        { 'LeftLowerLeg', 'LeftFoot' },
+        { 'LowerTorso', 'RightUpperLeg' },
+        { 'RightUpperLeg', 'RightLowerLeg' },
+        { 'RightLowerLeg', 'RightFoot' },
+    }
+    local R6_BONES = {
+        { 'Head', 'Torso' },
+        { 'Torso', 'Left Arm' },
+        { 'Torso', 'Right Arm' },
+        { 'Torso', 'Left Leg' },
+        { 'Torso', 'Right Leg' },
+    }
+    local BOX_PARTS = {
         'Head', 'Torso', 'UpperTorso', 'LowerTorso', 'HumanoidRootPart',
         'Left Arm', 'Right Arm', 'Left Leg', 'Right Leg',
         'LeftUpperArm', 'RightUpperArm', 'LeftLowerArm', 'RightLowerArm',
         'LeftHand', 'RightHand', 'LeftUpperLeg', 'RightUpperLeg', 'LeftLowerLeg', 'RightLowerLeg',
         'LeftFoot', 'RightFoot',
     }
-    local BONE_PAIRS = {
-        { 'Head', 'UpperTorso' }, { 'Head', 'Torso' },
-        { 'UpperTorso', 'LowerTorso' },
-        { 'UpperTorso', 'LeftUpperArm' }, { 'UpperTorso', 'RightUpperArm' },
-        { 'Torso', 'Left Arm' }, { 'Torso', 'Right Arm' },
-        { 'Torso', 'Left Leg' }, { 'Torso', 'Right Leg' },
-        { 'LowerTorso', 'LeftUpperLeg' }, { 'LowerTorso', 'RightUpperLeg' },
-        { 'LeftUpperArm', 'LeftLowerArm' }, { 'RightUpperArm', 'RightLowerArm' },
-        { 'LeftLowerArm', 'LeftHand' }, { 'RightLowerArm', 'RightHand' },
-        { 'LeftUpperLeg', 'LeftLowerLeg' }, { 'RightUpperLeg', 'RightLowerLeg' },
-        { 'LeftLowerLeg', 'LeftFoot' }, { 'RightLowerLeg', 'RightFoot' },
-    }
+
+    local function flagOn(name)
+        return Library.Flags[name] == true
+    end
+    local function flagColor(name, fallback)
+        local v = Library.Flags[name]
+        if typeof(v) == 'Color3' then return v end
+        return fallback or ESP_DEFAULT
+    end
+    local function flagNum(name, fallback)
+        local v = tonumber(Library.Flags[name])
+        if v then return v end
+        return fallback
+    end
 
     local function project(worldPos)
         local v = cam:WorldToViewportPoint(worldPos)
         return Vector2.new(v.X, v.Y), v.Z > 0.05
     end
 
-    local function placeBone(frame, a, b)
+    local function setText(lbl, text, x, y, visible, color, align)
+        if not lbl then return false end
+        if not visible or text == nil or text == '' or x == nil or y == nil then
+            lbl.Visible = false
+            return false
+        end
+        local col = color or Color3.new(1, 1, 1)
+        local lum = col.R * 0.299 + col.G * 0.587 + col.B * 0.114
+        if lum < 0.2 then col = Color3.new(1, 1, 1) end
+        local anchorX = 0.5
+        local textAlign = Enum.TextXAlignment.Center
+        if align == 'left' then
+            anchorX = 1
+            textAlign = Enum.TextXAlignment.Right
+        elseif align == 'right' then
+            anchorX = 0
+            textAlign = Enum.TextXAlignment.Left
+        end
+        lbl.Text = tostring(text)
+        lbl.TextSize = TEXT_SIZE
+        lbl.TextColor3 = col
+        lbl.AnchorPoint = Vector2.new(anchorX, 0)
+        lbl.TextXAlignment = textAlign
+        lbl.Position = UDim2.fromOffset(math.floor(x + 0.5), math.floor(y + 0.5))
+        lbl.Visible = true
+        return true
+    end
+
+    local function placeBone(pair, a, b, color, thick, outline)
         local mid = (a + b) * 0.5
         local delta = b - a
         local len = delta.Magnitude
         if len < 1 then
-            frame.Visible = false
+            pair.outer.Visible = false
+            pair.inner.Visible = false
             return
         end
-        frame.Size = UDim2.fromOffset(math.max(2, len), 2)
-        frame.Position = UDim2.fromOffset(mid.X, mid.Y)
-        frame.Rotation = math.deg(math.atan2(delta.Y, delta.X))
-        frame.BackgroundColor3 = espColor
-        frame.Visible = true
+        local rot = math.deg(math.atan2(delta.Y, delta.X))
+        local oThick = thick + (outline and 2.2 or 0.5)
+        pair.outer.Size = UDim2.fromOffset(math.max(2, len), oThick)
+        pair.outer.Position = UDim2.fromOffset(mid.X, mid.Y)
+        pair.outer.Rotation = rot
+        pair.outer.BackgroundColor3 = Color3.new(0, 0, 0)
+        pair.outer.Visible = outline == true
+        pair.inner.Size = UDim2.fromOffset(math.max(2, len), thick)
+        pair.inner.Position = UDim2.fromOffset(mid.X, mid.Y)
+        pair.inner.Rotation = rot
+        pair.inner.BackgroundColor3 = color
+        pair.inner.Visible = true
+    end
+
+    local function hideAllEsp()
+        boxOuter.Visible = false
+        boxInner.Visible = false
+        hpBg.Visible = false
+        nameTag.Visible = false
+        visTag.Visible = false
+        distTag.Visible = false
+        hpText.Visible = false
+        toolTag.Visible = false
+        attTag.Visible = false
+        for _, pair in ipairs(bonePool) do
+            pair.outer.Visible = false
+            pair.inner.Visible = false
+        end
+        if chamsHighlight then chamsHighlight.Enabled = false end
     end
 
     local function updateEspOverlay()
         if not cloneModel or not cam then return end
         syncOverlay()
+
+        local master = flagOn('ESPEnabled')
+        if not master then
+            hideAllEsp()
+            return
+        end
+
+        local showBox = flagOn('BoxESP')
+        local showSkeleton = flagOn('SkeletonESP')
+        local showChams = flagOn('ChamsESP')
+        local showName = flagOn('NameESP')
+        local showDistance = flagOn('DistanceESP')
+        local showVisible = flagOn('VisibleESP')
+        local showHealthText = flagOn('HealthTextESP')
+        local showHealthBar = flagOn('HealthBarESP')
+        local showWeapon = flagOn('HeldWeaponESP')
+        local showAtt = showWeapon and flagOn('WeaponAttachments')
+        local outline = Library.Flags.ESPOutline ~= false
+        local boxColor = flagColor('BoxESPColor', ESP_DEFAULT)
+        local skeletonColor = flagColor('SkeletonESPColor', ESP_DEFAULT)
+        local chamsColor = flagColor('ChamsESPColor', ESP_DEFAULT)
+        local nameColor = flagColor('NameESPColor', ESP_DEFAULT)
+        local distanceColor = flagColor('DistanceESPColor', ESP_DEFAULT)
+        local visibleColor = flagColor('VisibleESPColor', Color3.fromRGB(80, 255, 120))
+        local healthTextColor = flagColor('HealthTextESPColor', ESP_DEFAULT)
+        local healthBarColor = flagColor('HealthBarESPColor', Color3.fromRGB(80, 180, 255))
+        local weaponColor = flagColor('HeldWeaponESPColor', Color3.fromRGB(255, 200, 75))
+        local attColor = flagColor('AttachmentsESPColor', Color3.fromRGB(200, 200, 210))
+        local skelThick = flagNum('SkeletonThickness', 1.8)
+        local chamsFill = flagNum('ChamsFill', 0.55)
+
         local minX, minY = math.huge, math.huge
         local maxX, maxY = -math.huge, -math.huge
         local any = false
         local partMap = {}
-        for _, n in ipairs(BODY_PARTS) do
-            local p = cloneModel:FindFirstChild(n, true)
+        for _, n in ipairs(BOX_PARTS) do
+            local p = cloneModel:FindFirstChild(n)
             if p and p:IsA('BasePart') then
                 partMap[n] = p
                 local cf, sz = p.CFrame, p.Size * 0.5
                 for _, ox in ipairs({ -1, 1 }) do
                     for _, oy in ipairs({ -1, 1 }) do
                         for _, oz in ipairs({ -1, 1 }) do
-                            local world = (cf * CFrame.new(ox * sz.X, oy * sz.Y, oz * sz.Z)).Position
-                            local screen, ok = project(world)
+                            local screen, ok = project((cf * CFrame.new(ox * sz.X, oy * sz.Y, oz * sz.Z)).Position)
                             if ok then
                                 any = true
                                 if screen.X < minX then minX = screen.X end
@@ -920,54 +1022,133 @@ function Library:CreateCharPreview(shell, height, xOffset)
             end
         end
 
+        local boxPos, boxSize
         if any then
-            local padPx = 3
-            box.Visible = true
-            box.Position = UDim2.fromOffset(math.floor(minX - padPx), math.floor(minY - padPx))
-            box.Size = UDim2.fromOffset(
-                math.max(10, math.floor(maxX - minX + padPx * 2)),
-                math.max(10, math.floor(maxY - minY + padPx * 2))
+            boxPos = Vector2.new(math.floor(minX - BOX_PAD_X), math.floor(minY - BOX_PAD_Y))
+            boxSize = Vector2.new(
+                math.max(10, math.floor(maxX - minX + BOX_PAD_X * 2)),
+                math.max(10, math.floor(maxY - minY + BOX_PAD_Y * 2))
             )
-            boxStroke.Color = espColor
-            boxStroke.Transparency = 0.1 + 0.12 * math.sin(tick() * 3)
-        else
-            box.Visible = false
         end
 
-        local head = partMap.Head
-        if head then
-            local hs, ok = project(head.Position + Vector3.new(0, head.Size.Y * 0.35, 0))
-            headDot.Visible = ok
-            if ok then
-                headDot.Position = UDim2.fromOffset(hs.X, hs.Y)
-                headDot.BackgroundColor3 = espColor
+        if showBox and boxPos and boxSize then
+            boxOuter.Visible = outline
+            boxOuter.Position = UDim2.fromOffset(boxPos.X, boxPos.Y)
+            boxOuter.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
+            boxOuterStroke.Thickness = outline and 3 or 1
+            boxOuterStroke.Color = Color3.new(0, 0, 0)
+            boxInner.Visible = true
+            boxInner.Position = UDim2.fromOffset(boxPos.X, boxPos.Y)
+            boxInner.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
+            boxInnerStroke.Color = boxColor
+            boxInnerStroke.Thickness = 1
+        else
+            boxOuter.Visible = false
+            boxInner.Visible = false
+        end
+
+        if showChams and cloneModel then
+            if not chamsHighlight or not chamsHighlight.Parent then
+                chamsHighlight = Instance.new('Highlight')
+                chamsHighlight.Name = 'PreviewChams'
+                chamsHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                chamsHighlight.Parent = cloneModel
             end
-        else
-            headDot.Visible = false
+            chamsHighlight.Enabled = true
+            chamsHighlight.FillColor = chamsColor
+            chamsHighlight.OutlineColor = outline and Color3.new(0, 0, 0) or chamsColor
+            chamsHighlight.FillTransparency = 1 - math.clamp(chamsFill, 0, 1)
+            chamsHighlight.OutlineTransparency = outline and 0.15 or 1
+        elseif chamsHighlight then
+            chamsHighlight.Enabled = false
         end
 
+        local bones = partMap.UpperTorso and R15_BONES or R6_BONES
         local used = 0
-        for _, pair in ipairs(BONE_PAIRS) do
-            local aPart, bPart = partMap[pair[1]], partMap[pair[2]]
-            if aPart and bPart then
-                local a, aOk = project(aPart.Position)
-                local b, bOk = project(bPart.Position)
-                if aOk and bOk then
-                    used += 1
-                    placeBone(getBone(used), a, b)
+        if showSkeleton then
+            for _, pairNames in ipairs(bones) do
+                local aPart, bPart = partMap[pairNames[1]], partMap[pairNames[2]]
+                if aPart and bPart then
+                    local a, aOk = project(aPart.Position)
+                    local b, bOk = project(bPart.Position)
+                    if aOk and bOk then
+                        used += 1
+                        placeBone(getBone(used), a, b, skeletonColor, skelThick, outline)
+                    end
                 end
             end
         end
         for i = used + 1, #bonePool do
-            bonePool[i].Visible = false
+            bonePool[i].outer.Visible = false
+            bonePool[i].inner.Visible = false
+        end
+
+        if not boxPos or not boxSize then
+            nameTag.Visible = false
+            visTag.Visible = false
+            distTag.Visible = false
+            hpText.Visible = false
+            toolTag.Visible = false
+            attTag.Visible = false
+            hpBg.Visible = false
+            return
+        end
+
+        local textX = boxPos.X + boxSize.X * 0.5
+        local sideY = boxPos.Y
+        local topY = boxPos.Y - TEXT_SIZE - TEXT_PAD - (showHealthBar and 8 or 0)
+        local barY = boxPos.Y - 6
+        local bottomY = boxPos.Y + boxSize.Y + TEXT_PAD
+        local lineHeight = TEXT_SIZE + TEXT_PAD
+
+        local above = 0
+        if setText(nameTag, liveName, textX, topY, showName, nameColor, 'center') then
+            above += 1
+        end
+        if setText(
+            visTag,
+            'VISIBLE',
+            textX,
+            topY - above * lineHeight,
+            showVisible,
+            visibleColor,
+            'center'
+        ) then
+            above += 1
+        end
+
+        setText(hpText, string.format('%d/%d', liveHp, liveMaxHp), boxPos.X - SIDE_GAP, sideY, showHealthText, healthTextColor, 'left')
+        setText(distTag, '3m', boxPos.X + boxSize.X + SIDE_GAP, sideY, showDistance, distanceColor, 'right')
+
+        local below = 0
+        if setText(toolTag, liveWeapon, textX, bottomY, showWeapon, weaponColor, 'center') then
+            below += 1
+        end
+        setText(attTag, showAtt and 'Stock / Grip' or nil, textX, bottomY + below * lineHeight, showAtt, attColor, 'center')
+
+        if showHealthBar then
+            local pct = math.clamp(liveHp / math.max(liveMaxHp, 1), 0, 1)
+            local barColor = healthBarColor
+            if pct <= 0.25 then
+                barColor = Color3.fromRGB(255, 70, 70)
+            elseif pct <= 0.55 then
+                barColor = Color3.fromRGB(255, 190, 70)
+            end
+            local barH = 4
+            hpBg.Visible = true
+            hpBg.Position = UDim2.fromOffset(boxPos.X - 1, barY - 1)
+            hpBg.Size = UDim2.fromOffset(boxSize.X + 2, barH + 2)
+            hpFill.Position = UDim2.fromOffset(1, 1)
+            hpFill.Size = UDim2.fromOffset(math.max(1, boxSize.X * pct), barH)
+            hpFill.BackgroundColor3 = barColor
+        else
+            hpBg.Visible = false
         end
     end
 
     local function stripClone(model)
         for _, d in ipairs(model:GetDescendants()) do
-            if d:IsA('BaseScript') or d:IsA('LocalScript') or d:IsA('Script') then
-                d:Destroy()
-            elseif d:IsA('ForceField') then
+            if d:IsA('BaseScript') or d:IsA('LocalScript') or d:IsA('Script') or d:IsA('ForceField') or d:IsA('Highlight') then
                 d:Destroy()
             end
         end
@@ -1002,27 +1183,25 @@ function Library:CreateCharPreview(shell, height, xOffset)
         if not char then return end
         local hum = char:FindFirstChildOfClass('Humanoid')
         if not hum then return end
-        local tool = 'UNARMED'
+        liveWeapon = 'Unarmed'
         pcall(function()
             local t = char:FindFirstChildOfClass('Tool')
-            if t then tool = t.Name end
+            if t then liveWeapon = t.Name end
         end)
-        toolTag.Text = string.upper(tool)
-        hpText.Text = math.floor(hum.Health + 0.5) .. '/' .. math.max(1, math.floor(hum.MaxHealth + 0.5))
-        hpFill.Size = UDim2.new(math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1), 0, 1, 0)
-        nameTag.Text = tostring(LocalPlayer.Name)
-        distTag.Text = '3m'
+        liveHp = math.floor(hum.Health + 0.5)
+        liveMaxHp = math.max(1, math.floor(hum.MaxHealth + 0.5))
+        liveName = tostring(LocalPlayer.DisplayName ~= '' and LocalPlayer.DisplayName or LocalPlayer.Name)
     end
 
     local function rebuild()
+        chamsHighlight = nil
         if cloneModel then
             cloneModel:Destroy()
             cloneModel = nil
         end
         local char = LocalPlayer.Character
         if not char then return end
-        local hum = char:FindFirstChildOfClass('Humanoid')
-        if not hum then return end
+        if not char:FindFirstChildOfClass('Humanoid') then return end
         local ok, clone = pcall(function()
             char.Archivable = true
             local c = char:Clone()
@@ -1046,7 +1225,7 @@ function Library:CreateCharPreview(shell, height, xOffset)
 
     task.spawn(function()
         while panel.Parent do
-            task.wait(1.25)
+            task.wait(0.35)
             if Library.Open then refreshHud() end
         end
     end)
@@ -1303,13 +1482,15 @@ function Library:Window(opts)
             flag = nextFlag(flag)
             local default = o.Default == true
             local cb = o.Callback or function() end
+            local TOGGLE_W = 34
             local r = row(26)
-            label(r, { text = o.Text or flag, size = 12, color = Theme.text, h = 26, z = 9 }).Size = UDim2.new(1, -46, 1, 0)
+            local textLbl = label(r, { text = o.Text or flag, size = 12, color = Theme.text, h = 26, z = 9 })
+            textLbl.Size = UDim2.new(1, -(TOGGLE_W + 12), 1, 0)
             local box = Instance.new('TextButton')
             box.AutoButtonColor = false
             box.AnchorPoint = Vector2.new(1, 0.5)
             box.Position = UDim2.new(1, -2, 0.5, 0)
-            box.Size = UDim2.new(0, 34, 0, 18)
+            box.Size = UDim2.new(0, TOGGLE_W, 0, 18)
             box.BackgroundColor3 = default and Theme.accentSoft or Theme.bgDeep
             box.Text = ''
             box.ZIndex = 9
@@ -1345,15 +1526,22 @@ function Library:Window(opts)
             Library.Flags[flag .. '_obj'] = state
             set(default, false)
 
-
+            local colorCount = 0
             local toggleApi = state
             function toggleApi:Colorpicker(props)
                 props = props or {}
-                return Section:AddColorPicker(props.Flag or props.flag, {
-                    Text = props.Name or props.Title or '',
+                colorCount += 1
+                local sw, gap = 18, 4
+                local right = TOGGLE_W + 6 + colorCount * (sw + gap)
+                textLbl.Size = UDim2.new(1, -(right + 6), 1, 0)
+                Section:AddColorPicker(props.Flag or props.flag, {
                     Default = props.Default or props.default or Color3.new(1, 1, 1),
                     Callback = props.Callback or props.callback,
+                    ParentRow = r,
+                    InlineOffset = colorCount,
+                    ToggleWidth = TOGGLE_W,
                 })
+                return toggleApi
             end
             function toggleApi:Keybind(props)
                 props = props or {}
@@ -1697,16 +1885,32 @@ function Library:Window(opts)
             flag = nextFlag(flag)
             local default = o.Default or Theme.accent
             local cb = o.Callback or function() end
-            local r = row(26)
-            label(r, { text = o.Text or 'Color', size = 12, color = Theme.text, h = 26, z = 9 }).Size = UDim2.new(1, -36, 1, 0)
+            local parentRow = o.ParentRow
+            local inlineOffset = tonumber(o.InlineOffset) or 0
+            local toggleW = tonumber(o.ToggleWidth) or 0
+            local r
             local swatch = Instance.new('TextButton')
             swatch.AutoButtonColor = false
-            swatch.AnchorPoint = Vector2.new(1, 0.5)
-            swatch.Position = UDim2.new(1, -1, 0.5, 0)
-            swatch.Size = UDim2.new(0, 28, 0, 18)
             swatch.BackgroundColor3 = default
             swatch.Text = ''
-            swatch.ZIndex = 9
+            swatch.ZIndex = 11
+            if parentRow then
+                r = parentRow
+                local sw, gap = 18, 4
+                swatch.AnchorPoint = Vector2.new(1, 0.5)
+                swatch.Position = UDim2.new(1, -(toggleW + 6 + (inlineOffset - 1) * (sw + gap)), 0.5, 0)
+                swatch.Size = UDim2.new(0, sw, 0, 18)
+            else
+                r = row(26)
+                local title = o.Text
+                if title and title ~= '' then
+                    label(r, { text = title, size = 12, color = Theme.text, h = 26, z = 9 }).Size = UDim2.new(1, -36, 1, 0)
+                end
+                swatch.AnchorPoint = Vector2.new(1, 0.5)
+                swatch.Position = UDim2.new(1, -1, 0.5, 0)
+                swatch.Size = UDim2.new(0, 28, 0, 18)
+                swatch.ZIndex = 9
+            end
             swatch.Parent = r
             corner(swatch, 5)
             stroke(swatch, Theme.stroke, 1)
