@@ -2556,14 +2556,6 @@ function Library:Window(opts)
     end
 
 
-    if not Library._demoMode then
-        task.defer(function()
-            if Library.ScreenGUI == gui then
-                Library:SetOpen(true)
-            end
-        end)
-    end
-
     function Library:SetOpen(bool)
         local want = bool == true
         Library.Open = want
@@ -2854,7 +2846,7 @@ function Library:PlayLoading(opts)
 
     local logo = Instance.new('ImageLabel')
     logo.AnchorPoint = Vector2.new(0.5, 0.5)
-    logo.Position = UDim2.new(0.5, 0, 0.42, 0)
+    logo.Position = UDim2.new(0.5, 0, 0.38, 0)
     logo.Size = UDim2.new(0, 0, 0, 0)
     logo.BackgroundTransparency = 1
     logo.Image = LOGO_IMAGE
@@ -2866,34 +2858,34 @@ function Library:PlayLoading(opts)
     local title = label(overlay, {
         text = 'BAP DELTA',
         font = Theme.fontBold,
-        size = 26,
+        size = 30,
         color = Theme.text,
-        h = 30,
+        h = 34,
         z = 801,
         x = Enum.TextXAlignment.Center,
     })
     title.AnchorPoint = Vector2.new(0.5, 0)
-    title.Position = UDim2.new(0.5, 0, 0.42, 128)
-    title.Size = UDim2.new(0, 320, 0, 30)
+    title.Position = UDim2.new(0.5, 0, 0.38, 188)
+    title.Size = UDim2.new(0, 380, 0, 34)
     title.TextTransparency = 1
 
     local status = label(overlay, {
         text = 'loading',
         font = Theme.fontMono,
-        size = 12,
+        size = 13,
         color = Theme.textDim,
         h = 16,
         z = 801,
         x = Enum.TextXAlignment.Center,
     })
     status.AnchorPoint = Vector2.new(0.5, 0)
-    status.Position = UDim2.new(0.5, 0, 0.42, 162)
-    status.Size = UDim2.new(0, 240, 0, 16)
+    status.Position = UDim2.new(0.5, 0, 0.38, 228)
+    status.Size = UDim2.new(0, 280, 0, 16)
 
     local barBg = Instance.new('Frame')
     barBg.AnchorPoint = Vector2.new(0.5, 0)
-    barBg.Position = UDim2.new(0.5, 0, 0.42, 188)
-    barBg.Size = UDim2.new(0, 200, 0, 3)
+    barBg.Position = UDim2.new(0.5, 0, 0.38, 256)
+    barBg.Size = UDim2.new(0, 240, 0, 3)
     barBg.BackgroundColor3 = Theme.bgPanel
     barBg.BorderSizePixel = 0
     barBg.ZIndex = 801
@@ -2907,7 +2899,7 @@ function Library:PlayLoading(opts)
     barFill.Parent = barBg
     corner(barFill, 2)
 
-    tween(logo, { Size = UDim2.new(0, 220, 0, 220), ImageTransparency = 0 }, 0.45, Enum.EasingStyle.Back)
+    tween(logo, { Size = UDim2.new(0, 340, 0, 340), ImageTransparency = 0 }, 0.45, Enum.EasingStyle.Back)
     tween(title, { TextTransparency = 0 }, 0.35)
 
     local t0 = tick()
@@ -2916,12 +2908,12 @@ function Library:PlayLoading(opts)
         local e = 1 - (1 - a) ^ 3
         barFill.Size = UDim2.new(e, 0, 1, 0)
         status.Text = string.format('loading  %d%%', math.floor(e * 100))
-        logo.Position = UDim2.new(0.5, 0, 0.42, math.sin(tick() * 2.4) * 5)
+        logo.Position = UDim2.new(0.5, 0, 0.38, math.sin(tick() * 2.4) * 6)
         RunService.RenderStepped:Wait()
     end
     status.Text = 'ready'
     tween(overlay, { BackgroundTransparency = 1 }, 0.3)
-    tween(logo, { ImageTransparency = 1, Size = UDim2.new(0, 260, 0, 260) }, 0.3)
+    tween(logo, { ImageTransparency = 1, Size = UDim2.new(0, 380, 0, 380) }, 0.3)
     tween(title, { TextTransparency = 1 }, 0.25)
     tween(status, { TextTransparency = 1 }, 0.25)
     tween(barBg, { BackgroundTransparency = 1 }, 0.25)
