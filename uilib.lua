@@ -1894,7 +1894,6 @@ function Library:Window(opts)
                 st.Transparency = 0
             end)
 
-            -- Right-click cycles Hold / Toggle / Always (Linoria-style)
             btn.MouseButton2Click:Connect(function()
                 local order = { 'Hold', 'Toggle', 'Always' }
                 local idx = 1
@@ -2802,12 +2801,13 @@ function Library:LoadConfig(config)
                 value = value:sub(8, #value - 1)
             elseif value:sub(1, 6) == 'number' then
                 value = tonumber(value:sub(8, #value - 1))
+            elseif value:match('^Enum%.KeyCode%.') or value:match('^Enum%.UserInputType%.') then
+                value = value:gsub('^Enum%.KeyCode%.', ''):gsub('^Enum%.UserInputType%.', '')
             end
             parsed[key] = value
         end
     end
 
-    -- Old flag names / Linoria keybind suffix variants -> current names
     local FLAG_ALIASES = {
         AimbotKey = 'AimbotAimKey',
         ManipKey = 'ManipAimKey',
@@ -2845,7 +2845,6 @@ function Library:LoadConfig(config)
         return flag:match('_KEY$') ~= nil
     end
 
-    -- Deterministic apply: values -> keys -> modes (so Hold/Always wins last)
     local ordered = {}
     for flag, value in pairs(parsed) do
         local rank = 1
@@ -2876,7 +2875,6 @@ function Library:LoadConfig(config)
             elseif type(value) == 'table' and value[1] and tonumber(value[1]) then
                 obj:Set(Color3.fromHSV(tonumber(value[1]) or 0, tonumber(value[2]) or 0, tonumber(value[3]) or 1))
             elseif type(value) == 'boolean' or type(value) == 'number' or type(value) == 'string' or typeof(value) == 'Color3' then
-                -- Skip bare bools on keybind objs (Linoria sometimes dumps Toggled as the flag)
                 if Library.Flags[flag .. '_KEY'] ~= nil or Library.Flags[flag .. '_KEY STATE'] ~= nil then
                     if type(value) == 'boolean' then
                         Library.Flags[flag] = value
