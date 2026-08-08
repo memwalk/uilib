@@ -204,7 +204,7 @@ local function popBlur()
         local b = blurState.effect
         tween(b, { Size = 0 }, 0.25)
         task.delay(0.28, function()
-            if blurState.depth <= 0 and b.Parent then b:Destroy() end
+            if blurState.depth <= 0 and b and b.Parent then b:Destroy() end
             if blurState.effect == b then blurState.effect = nil end
         end)
     end
@@ -212,9 +212,21 @@ end
 local function clearBlur()
     blurState.depth = 0
     if blurState.effect then
-        pcall(function() blurState.effect:Destroy() end)
+        local b = blurState.effect
         blurState.effect = nil
+        pcall(function()
+            if b.Parent then
+                tween(b, { Size = 0 }, 0.18)
+                task.delay(0.2, function()
+                    if b.Parent then b:Destroy() end
+                end)
+            end
+        end)
     end
+    pcall(function()
+        local leftover = Lighting:FindFirstChild('BapDeltaUIBlur')
+        if leftover then leftover:Destroy() end
+    end)
 end
 
 local function corner(parent, r)
@@ -494,31 +506,35 @@ function Library:CreateTargetHUD(opts)
     local toolL = mk(UDim2.new(0, 74, 0, 64), UDim2.new(0, 160, 0, 14), 'tool  —', Theme.textDim)
     local visorL = mk(UDim2.new(0, 230, 0, 64), UDim2.new(0, 100, 0, 14), 'visor  —', Theme.textDim, Enum.TextXAlignment.Right)
     local hpBg = Instance.new('Frame')
-    hpBg.Position = UDim2.new(0, 10, 1, -16)
-    hpBg.Size = UDim2.new(1, -20, 0, 8)
+    hpBg.Position = UDim2.new(0, 10, 1, -20)
+    hpBg.Size = UDim2.new(1, -20, 0, 14)
     hpBg.BackgroundColor3 = Theme.bg
     hpBg.BorderSizePixel = 0
+    hpBg.ClipsDescendants = true
     hpBg.ZIndex = 213
     hpBg.Parent = inline
-    corner(hpBg, 3)
+    corner(hpBg, 4)
     local hpFill = Instance.new('Frame')
     hpFill.Size = UDim2.new(0, 0, 1, 0)
     hpFill.BackgroundColor3 = Theme.success
     hpFill.BorderSizePixel = 0
     hpFill.ZIndex = 214
     hpFill.Parent = hpBg
-    corner(hpFill, 3)
-    local hpText = label(inline, {
+    corner(hpFill, 4)
+    local hpText = label(hpBg, {
         text = '',
-        font = Theme.fontMono,
+        font = Theme.fontBold,
         size = 10,
-        color = Theme.textMute,
-        h = 12,
-        z = 215,
-        x = Enum.TextXAlignment.Right,
+        color = Theme.text,
+        h = 14,
+        z = 216,
+        x = Enum.TextXAlignment.Center,
     })
-    hpText.Position = UDim2.new(1, -70, 1, -30)
-    hpText.Size = UDim2.new(0, 60, 0, 12)
+    hpText.Position = UDim2.new(0, 0, 0, 0)
+    hpText.Size = UDim2.new(1, 0, 1, 0)
+    hpText.TextYAlignment = Enum.TextYAlignment.Center
+    hpText.TextStrokeTransparency = 0.35
+    hpText.TextStrokeColor3 = Color3.new(0, 0, 0)
 
     local hud = {
         Frame = frame,
@@ -721,6 +737,7 @@ function Library:CreateCharPreview(shell, height, xOffset)
     local world = Instance.new('WorldModel')
     world.Parent = vp
     local cam = Instance.new('Camera')
+    cam.FieldOfView = 58
     cam.Parent = vp
     vp.CurrentCamera = cam
 
@@ -733,8 +750,16 @@ function Library:CreateCharPreview(shell, height, xOffset)
     overlay.Parent = panel
 
     local function syncOverlay()
-        overlay.Position = vp.Position
-        overlay.Size = vp.Size
+        local panelPos = panel.AbsolutePosition
+        local vpPos = vp.AbsolutePosition
+        local vpSize = vp.AbsoluteSize
+        if vpSize.X < 2 or vpSize.Y < 2 then
+            overlay.Position = vp.Position
+            overlay.Size = vp.Size
+            return
+        end
+        overlay.Position = UDim2.fromOffset(vpPos.X - panelPos.X, vpPos.Y - panelPos.Y)
+        overlay.Size = UDim2.fromOffset(vpSize.X, vpSize.Y)
     end
     syncOverlay()
 
@@ -1009,36 +1034,65 @@ function Library:CreateCharPreview(shell, height, xOffset)
         local skelThick = flagNum('SkeletonThickness', 1.8)
         local chamsFill = flagNum('ChamsFill', 0.55)
 
-        local minX, minY = math.huge, math.huge
-        local maxX, maxY = -math.huge, -math.huge
-        local validCount = 0
         local partMap = {}
         for _, n in ipairs(BOX_PARTS) do
             local p = cloneModel:FindFirstChild(n)
             if p and p:IsA('BasePart') then
                 partMap[n] = p
-                local screen, ok = project(p.Position)
-                if ok then
-                    validCount += 1
-                    if screen.X < minX then minX = screen.X end
-                    if screen.Y < minY then minY = screen.Y end
-                    if screen.X > maxX then maxX = screen.X end
-                    if screen.Y > maxY then maxY = screen.Y end
+            end
+        end
+
+        local vpSize = vp.AbsoluteSize
+        local boxPos, boxSize
+        local boxCFrame, worldBoxSize
+        local okBox = pcall(function()
+            boxCFrame, worldBoxSize = cloneModel:GetBoundingBox()
+        end)
+        if okBox and typeof(boxCFrame) == 'CFrame' and typeof(worldBoxSize) == 'Vector3' then
+            local half = worldBoxSize * 0.5
+            local minX, minY = math.huge, math.huge
+            local maxX, maxY = -math.huge, -math.huge
+            local validCount = 0
+            for _, ox in ipairs({ -1, 1 }) do
+                for _, oy in ipairs({ -1, 1 }) do
+                    for _, oz in ipairs({ -1, 1 }) do
+                        local screen, ok = project((boxCFrame * CFrame.new(ox * half.X, oy * half.Y, oz * half.Z)).Position)
+                        if ok then
+                            validCount += 1
+                            if screen.X < minX then minX = screen.X end
+                            if screen.Y < minY then minY = screen.Y end
+                            if screen.X > maxX then maxX = screen.X end
+                            if screen.Y > maxY then maxY = screen.Y end
+                        end
+                    end
+                end
+            end
+            if validCount >= 2 then
+                local width, height = maxX - minX, maxY - minY
+                if width >= 2 and height >= 2 then
+                    boxPos = Vector2.new(math.floor(minX - BOX_PAD_X), math.floor(minY - BOX_PAD_Y))
+                    boxSize = Vector2.new(
+                        math.max(10, math.floor(width + BOX_PAD_X * 2)),
+                        math.max(10, math.floor(height + BOX_PAD_Y * 2))
+                    )
                 end
             end
         end
 
-        local boxPos, boxSize
-        if validCount >= 2 and minX ~= math.huge then
-            local width = maxX - minX
-            local height = maxY - minY
-            if width >= 2 and height >= 2 then
-                boxPos = Vector2.new(math.floor(minX - BOX_PAD_X), math.floor(minY - BOX_PAD_Y))
-                boxSize = Vector2.new(
-                    math.max(10, math.floor(width + BOX_PAD_X * 2)),
-                    math.max(10, math.floor(height + BOX_PAD_Y * 2))
-                )
-            end
+        local function boxLooksValid()
+            if not boxPos or not boxSize or vpSize.X < 2 then return false end
+            if boxSize.X < 24 or boxSize.Y < 36 then return false end
+            local cx = boxPos.X + boxSize.X * 0.5
+            local cy = boxPos.Y + boxSize.Y * 0.5
+            if cx < vpSize.X * 0.18 or cx > vpSize.X * 0.82 then return false end
+            if cy < vpSize.Y * 0.12 or cy > vpSize.Y * 0.88 then return false end
+            return true
+        end
+        if not boxLooksValid() then
+            local bw = math.floor(vpSize.X * 0.38)
+            local bh = math.floor(vpSize.Y * 0.78)
+            boxPos = Vector2.new(math.floor((vpSize.X - bw) * 0.5), math.floor(vpSize.Y * 0.08))
+            boxSize = Vector2.new(bw, bh)
         end
 
         if showBox and boxPos and boxSize then
@@ -1106,10 +1160,11 @@ function Library:CreateCharPreview(shell, height, xOffset)
 
         local textX = boxPos.X + boxSize.X * 0.5
         local sideY = boxPos.Y
-        local topY = boxPos.Y - TEXT_SIZE - TEXT_PAD - (showHealthBar and 8 or 0)
-        local barY = boxPos.Y - 6
+        local topY = boxPos.Y - TEXT_SIZE - TEXT_PAD
         local bottomY = boxPos.Y + boxSize.Y + TEXT_PAD
         local lineHeight = TEXT_SIZE + TEXT_PAD
+        local barW = 4
+        local barX = boxPos.X - barW - 4
 
         local above = 0
         if setText(nameTag, liveName, textX, topY, showName, nameColor, 'center') then
@@ -1127,7 +1182,8 @@ function Library:CreateCharPreview(shell, height, xOffset)
             above += 1
         end
 
-        setText(hpText, string.format('%d/%d', liveHp, liveMaxHp), boxPos.X - SIDE_GAP, sideY, showHealthText, healthTextColor, 'left')
+        local hpTextX = showHealthBar and (barX - SIDE_GAP) or (boxPos.X - SIDE_GAP)
+        setText(hpText, string.format('%d/%d', liveHp, liveMaxHp), hpTextX, sideY, showHealthText, healthTextColor, 'left')
         setText(distTag, '3m', boxPos.X + boxSize.X + SIDE_GAP, sideY, showDistance, distanceColor, 'right')
 
         local below = 0
@@ -1144,12 +1200,12 @@ function Library:CreateCharPreview(shell, height, xOffset)
             elseif pct <= 0.55 then
                 barColor = Color3.fromRGB(255, 190, 70)
             end
-            local barH = 4
+            local fillH = math.max(1, math.floor(boxSize.Y * pct))
             hpBg.Visible = true
-            hpBg.Position = UDim2.fromOffset(boxPos.X - 1, barY - 1)
-            hpBg.Size = UDim2.fromOffset(boxSize.X + 2, barH + 2)
-            hpFill.Position = UDim2.fromOffset(1, 1)
-            hpFill.Size = UDim2.fromOffset(math.max(1, boxSize.X * pct), barH)
+            hpBg.Position = UDim2.fromOffset(barX - 1, boxPos.Y - 1)
+            hpBg.Size = UDim2.fromOffset(barW + 2, boxSize.Y + 2)
+            hpFill.Position = UDim2.fromOffset(1, 1 + (boxSize.Y - fillH))
+            hpFill.Size = UDim2.fromOffset(barW, fillH)
             hpFill.BackgroundColor3 = barColor
         else
             hpBg.Visible = false
@@ -1180,7 +1236,7 @@ function Library:CreateCharPreview(shell, height, xOffset)
         if not root then return end
         model.PrimaryPart = root
         local cf = root.CFrame
-        local offset = CFrame.new(-cf.Position.X, -cf.Position.Y + 2.6, -cf.Position.Z)
+        local offset = CFrame.new(-cf.Position.X, -cf.Position.Y + 1.15, -cf.Position.Z)
         for _, p in ipairs(model:GetDescendants()) do
             if p:IsA('BasePart') then
                 p.CFrame = offset * p.CFrame
@@ -1244,11 +1300,11 @@ function Library:CreateCharPreview(shell, height, xOffset)
         if not panel.Parent or not panel.Visible then return end
         if not cloneModel or not cloneModel.PrimaryPart then return end
         angle += dt * 0.45
-        local dist = 6.2
-        local focus = cloneModel.PrimaryPart.Position + Vector3.new(0, 1.1, 0)
+        local dist = 10.2
+        local focus = cloneModel.PrimaryPart.Position + Vector3.new(0, 0.35, 0)
         local orbit = CFrame.new(focus)
             * CFrame.Angles(0, angle, 0)
-            * CFrame.new(0, 1.35, dist)
+            * CFrame.new(0, 0.55, dist)
         cam.CFrame = CFrame.lookAt(orbit.Position, focus, Vector3.yAxis)
         updateEspOverlay()
     end)
@@ -2359,14 +2415,8 @@ function Library:Window(opts)
             if state then
                 pageBtn.BackgroundColor3 = Theme.bgActive
                 nameL.TextColor3 = Theme.text
-                iconL.TextColor3 = Theme.accent
+                iconL.TextColor3 = Theme.text
                 pageRoot.BackgroundTransparency = 1
-
-                for _, d in ipairs(pageBody:GetDescendants()) do
-                    if d:IsA('Frame') and d.Name ~= 'UIStroke' then
-
-                    end
-                end
             else
                 pageBtn.BackgroundColor3 = Theme.bgDeep
                 nameL.TextColor3 = Theme.textDim
@@ -2512,10 +2562,9 @@ function Library:Window(opts)
             task.delay(0.12, function()
                 if not Library.Open and shell.Parent then shell.Visible = false end
             end)
-            if Library._uiBlurOn then
-                Library._uiBlurOn = false
-                popBlur()
-            end
+            Library._uiBlurOn = false
+            clearBlur()
+            if Library.CharPreview then Library.CharPreview:SetVisible(false) end
         end
         pcall(function() UserInputService.MouseIconEnabled = not want end)
     end
@@ -2770,7 +2819,11 @@ function Library:PlayLoading(opts)
     local duration = opts.Duration or 2.2
     local gui = Library.ScreenGUI
     if not gui then return end
-    pushBlur(26)
+    local ownedBlur = false
+    if not Library._uiBlurOn then
+        pushBlur(26)
+        ownedBlur = true
+    end
 
     local overlay = Instance.new('Frame')
     overlay.Size = UDim2.new(1, 0, 1, 0)
@@ -2856,7 +2909,9 @@ function Library:PlayLoading(opts)
     tween(barFill, { BackgroundTransparency = 1 }, 0.25)
     task.wait(0.32)
     overlay:Destroy()
-    popBlur()
+    if ownedBlur then
+        popBlur()
+    end
 end
 
 local runDemo = true
