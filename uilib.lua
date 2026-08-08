@@ -886,7 +886,7 @@ function Library:CreateCharPreview(shell, height, xOffset)
         { 'Torso', 'Right Leg' },
     }
     local BOX_PARTS = {
-        'Head', 'Torso', 'UpperTorso', 'LowerTorso', 'HumanoidRootPart',
+        'Head', 'Torso', 'UpperTorso', 'LowerTorso',
         'Left Arm', 'Right Arm', 'Left Leg', 'Right Leg',
         'LeftUpperArm', 'RightUpperArm', 'LeftLowerArm', 'RightLowerArm',
         'LeftHand', 'RightHand', 'LeftUpperLeg', 'RightUpperLeg', 'LeftLowerLeg', 'RightLowerLeg',
@@ -1037,58 +1037,37 @@ function Library:CreateCharPreview(shell, height, xOffset)
 
         local vpSize = vp.AbsoluteSize
         local boxPos, boxSize
-        local minWX, minWY, minWZ = math.huge, math.huge, math.huge
-        local maxWX, maxWY, maxWZ = -math.huge, -math.huge, -math.huge
-        local bodyCount = 0
+        local minX, minY = math.huge, math.huge
+        local maxX, maxY = -math.huge, -math.huge
+        local validCount = 0
         for _, n in ipairs(BOX_PARTS) do
             local p = partMap[n]
             if p then
-                bodyCount += 1
                 local cf, sz = p.CFrame, p.Size * 0.5
                 for _, ox in ipairs({ -1, 1 }) do
                     for _, oy in ipairs({ -1, 1 }) do
                         for _, oz in ipairs({ -1, 1 }) do
-                            local w = (cf * CFrame.new(ox * sz.X, oy * sz.Y, oz * sz.Z)).Position
-                            if w.X < minWX then minWX = w.X end
-                            if w.Y < minWY then minWY = w.Y end
-                            if w.Z < minWZ then minWZ = w.Z end
-                            if w.X > maxWX then maxWX = w.X end
-                            if w.Y > maxWY then maxWY = w.Y end
-                            if w.Z > maxWZ then maxWZ = w.Z end
+                            local screen, ok = project((cf * CFrame.new(ox * sz.X, oy * sz.Y, oz * sz.Z)).Position)
+                            if ok then
+                                validCount += 1
+                                if screen.X < minX then minX = screen.X end
+                                if screen.Y < minY then minY = screen.Y end
+                                if screen.X > maxX then maxX = screen.X end
+                                if screen.Y > maxY then maxY = screen.Y end
+                            end
                         end
                     end
                 end
             end
         end
-        if bodyCount >= 2 and minWX ~= math.huge then
-            local boxCFrame = CFrame.new((minWX + maxWX) * 0.5, (minWY + maxWY) * 0.5, (minWZ + maxWZ) * 0.5)
-            local half = Vector3.new(maxWX - minWX, maxWY - minWY, maxWZ - minWZ) * 0.5
-            local minX, minY = math.huge, math.huge
-            local maxX, maxY = -math.huge, -math.huge
-            local validCount = 0
-            for _, ox in ipairs({ -1, 1 }) do
-                for _, oy in ipairs({ -1, 1 }) do
-                    for _, oz in ipairs({ -1, 1 }) do
-                        local screen, ok = project((boxCFrame * CFrame.new(ox * half.X, oy * half.Y, oz * half.Z)).Position)
-                        if ok then
-                            validCount += 1
-                            if screen.X < minX then minX = screen.X end
-                            if screen.Y < minY then minY = screen.Y end
-                            if screen.X > maxX then maxX = screen.X end
-                            if screen.Y > maxY then maxY = screen.Y end
-                        end
-                    end
-                end
-            end
-            if validCount >= 2 then
-                local width, height = maxX - minX, maxY - minY
-                if width >= 2 and height >= 2 then
-                    boxPos = Vector2.new(math.floor(minX - BOX_PAD_X), math.floor(minY - BOX_PAD_Y))
-                    boxSize = Vector2.new(
-                        math.max(10, math.floor(width + BOX_PAD_X * 2)),
-                        math.max(10, math.floor(height + BOX_PAD_Y * 2))
-                    )
-                end
+        if validCount >= 4 then
+            local width, height = maxX - minX, maxY - minY
+            if width >= 2 and height >= 2 then
+                boxPos = Vector2.new(math.floor(minX - BOX_PAD_X), math.floor(minY - BOX_PAD_Y))
+                boxSize = Vector2.new(
+                    math.max(10, math.floor(width + BOX_PAD_X * 2)),
+                    math.max(10, math.floor(height + BOX_PAD_Y * 2))
+                )
             end
         end
 
