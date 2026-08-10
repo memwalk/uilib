@@ -3023,7 +3023,225 @@ local Window = Library:Window({
     Height = 480,
 })
 
-local Aim = Window:Page({ Name = 'Aim', Icon = '◎' })
+-- Combat Tab
+local Combat = Window:Page({ Name = 'Combat', Icon = '⚔' })
+do
+    local Aim = Combat:AddSubTab('Aim')
+    local WeaponMods = Combat:AddSubTab('Weapons')
+    local Projectiles = Combat:AddSubTab('Projectiles')
+
+    local L = Aim:AddLeftGroupbox('Aimbot')
+    L:AddToggle('AimbotEnabled', { Text = 'Aimbot', Default = false })
+    L:AddDropdown('AimMethod', { Text = 'Method', Values = { 'Silent', 'Camera', 'Both' }, Default = 'Silent' })
+    L:AddToggle('VisibleCheck', { Text = 'Visible Check', Default = true })
+    L:AddToggle('PerfectPrediction', { Text = 'Prediction', Default = true })
+    L:AddSlider('AimSmoothness', { Text = 'Smoothness', Default = 0.3, Min = 0, Max = 1, Rounding = 2 })
+
+    local R = Aim:AddRightGroupbox('Silent Aim')
+    R:AddToggle('SilentAimEnabled', { Text = 'Silent Aim', Default = false })
+    R:AddSlider('SilentAimFOV', { Text = 'Silent FOV', Default = 80, Min = 10, Max = 360, Rounding = 0 })
+    R:AddKeybind('AimbotKey', { Text = 'Aim Key', Default = 'E' })
+
+    local WL = Aim:AddLeftGroupbox('FOV')
+    WL:AddToggle('ShowFOV', { Text = 'Show FOV Circle', Default = true })
+    WL:AddSlider('FOVSize', { Text = 'FOV Size', Default = 80, Min = 10, Max = 360, Rounding = 0 })
+    WL:AddColorPicker('FOVColor', { Text = 'FOV Color', Default = Theme.accent })
+
+    local WeaponL = WeaponMods:AddLeftGroupbox('Mods')
+    WeaponL:AddToggle('NoRecoil', { Text = 'No Recoil', Default = false })
+    WeaponL:AddToggle('NoSpread', { Text = 'No Spread', Default = false })
+    WeaponL:AddToggle('RapidFire', { Text = 'Rapid Fire', Default = false })
+    WeaponL:AddToggle('InstantHit', { Text = 'Instant Hit', Default = false })
+
+    local WeaponR = WeaponMods:AddRightGroupbox('Ballistics')
+    WeaponR:AddToggle('BulletSpeed', { Text = 'Bullet Speed', Default = false })
+    WeaponR:AddSlider('BulletSpeedValue', { Text = 'Speed Multi', Default = 1.5, Min = 1.0, Max = 5, Rounding = 1 })
+    WeaponR:AddToggle('BulletTracers', { Text = 'Tracers', Default = false })
+    WeaponR:AddToggle('DisableFlinch', { Text = 'No Flinch', Default = false })
+
+    local PL = Projectiles:AddLeftGroupbox('Projectile Mods')
+    PL:AddToggle('GrenadeNoBounce', { Text = 'Grenade No Bounce', Default = false })
+    PL:AddToggle('GrenadeNoExplode', { Text = 'Explode on Impact', Default = false })
+    PL:AddSlider('GrenadeMultiplier', { Text = 'Damage Multi', Default = 1.5, Min = 0.1, Max = 10, Rounding = 1 })
+
+    local PR = Projectiles:AddRightGroupbox('Auto')
+    PR:AddToggle('AutoKill', { Text = 'Auto Kill', Default = false })
+    PR:AddToggle('AutoHeadshot', { Text = 'Auto Headshot', Default = false })
+    PR:AddToggle('CritMultiplier', { Text = 'Crit Always', Default = false })
+end
+
+-- Visuals Tab
+local Visuals = Window:Page({ Name = 'Visuals', Icon = '◉' })
+do
+    local Players = Visuals:AddSubTab('Players')
+    local Vehicles = Visuals:AddSubTab('Vehicles')
+    local World = Visuals:AddSubTab('World')
+
+    local PL = Players:AddLeftGroupbox('Player ESP')
+    PL:AddToggle('BoxESP', { Text = 'Box', Default = true })
+    PL:AddToggle('SkeletonESP', { Text = 'Skeleton', Default = true })
+    PL:AddToggle('HealthBarESP', { Text = 'Health Bar', Default = true })
+    PL:AddToggle('HealthTextESP', { Text = 'Health Text', Default = true })
+    PL:AddToggle('NameESP', { Text = 'Name', Default = true })
+    PL:AddToggle('DistanceESP', { Text = 'Distance', Default = true })
+    PL:AddToggle('WeaponESP', { Text = 'Weapon', Default = false })
+    PL:AddToggle('ChamsESP', { Text = 'Chams', Default = false })
+
+    local PR = Players:AddRightGroupbox('ESP Colors')
+    PR:AddColorPicker('BoxESPColor', { Text = 'Box Color', Default = Color3.fromRGB(255, 255, 255) })
+    PR:AddColorPicker('SkeletonESPColor', { Text = 'Skeleton Color', Default = Color3.fromRGB(255, 255, 255) })
+    PR:AddColorPicker('HealthBarESPColor', { Text = 'Health Color', Default = Color3.fromRGB(80, 180, 255) })
+    PR:AddColorPicker('NameESPColor', { Text = 'Name Color', Default = Color3.fromRGB(255, 255, 255) })
+    PR:AddColorPicker('DistanceESPColor', { Text = 'Distance Color', Default = Color3.fromRGB(255, 255, 255) })
+    PR:AddColorPicker('ChamsESPColor', { Text = 'Chams Color', Default = Color3.fromRGB(255, 100, 100) })
+
+    local VL = Vehicles:AddLeftGroupbox('Vehicle ESP')
+    VL:AddToggle('VehicleESP', { Text = 'Vehicle ESP', Default = false })
+    VL:AddToggle('VehicleNameESP', { Text = 'Show Name', Default = true })
+    VL:AddToggle('VehicleChams', { Text = 'Chams', Default = false })
+
+    local VR = Vehicles:AddRightGroupbox('Vehicle Colors')
+    VR:AddColorPicker('VehicleESPColor', { Text = 'Color', Default = Color3.fromRGB(255, 210, 90) })
+
+    local WL = World:AddLeftGroupbox('World ESP')
+    WL:AddToggle('CorpseESP', { Text = 'Corpse', Default = false })
+    WL:AddToggle('LootESP', { Text = 'Loot', Default = false })
+    WL:AddToggle('CrateESP', { Text = 'Crates', Default = false })
+    WL:AddToggle('KeycardESP', { Text = 'Keycard', Default = false })
+    WL:AddToggle('GunDropESP', { Text = 'Gun Drops', Default = false })
+
+    local WR = World:AddRightGroupbox('World Colors')
+    WR:AddColorPicker('CorpseESPColor', { Text = 'Corpse Color', Default = Color3.fromRGB(180, 90, 255) })
+    WR:AddColorPicker('LootESPColor', { Text = 'Loot Color', Default = Color3.fromRGB(255, 210, 90) })
+    WR:AddColorPicker('CrateESPColor', { Text = 'Crate Color', Default = Color3.fromRGB(255, 105, 180) })
+end
+
+-- Exploits Tab
+local Exploits = Window:Page({ Name = 'Exploits', Icon = '⚡' })
+do
+    local Movement = Exploits:AddSubTab('Movement')
+    local Misc = Exploits:AddSubTab('Misc')
+
+    local ML = Movement:AddLeftGroupbox('Movement')
+    ML:AddToggle('NoSlow', { Text = 'No Slow', Default = false })
+    ML:AddToggle('OmniSprint', { Text = 'Omni Sprint', Default = false })
+    ML:AddToggle('NoLegBreak', { Text = 'No Leg Break', Default = false })
+    ML:AddSlider('WalkSpeed', { Text = 'Walk Speed', Default = 16, Min = 0, Max = 100, Rounding = 1 })
+    ML:AddSlider('JumpPower', { Text = 'Jump Power', Default = 50, Min = 0, Max = 200, Rounding = 1 })
+
+    local MR = Movement:AddRightGroupbox('Advanced')
+    MR:AddToggle('Gravity', { Text = 'Lower Gravity', Default = false })
+    MR:AddSlider('GravityValue', { Text = 'Gravity', Default = 192, Min = 0, Max = 300, Rounding = 1 })
+    MR:AddToggle('Noclip', { Text = 'Noclip', Default = false })
+    MR:AddToggle('Wallrun', { Text = 'Wall Run', Default = false })
+
+    local MiscL = Misc:AddLeftGroupbox('Anti')
+    MiscL:AddToggle('AntiKick', { Text = 'Anti Kick', Default = true })
+    MiscL:AddToggle('AntiCheatBypass', { Text = 'AC Bypass', Default = false })
+    MiscL:AddToggle('NoGunSway', { Text = 'No Gun Sway', Default = false })
+    MiscL:AddToggle('InstantScope', { Text = 'Instant Scope', Default = false })
+
+    local MiscR = Misc:AddRightGroupbox('Visuals')
+    MiscR:AddToggle('ThirdPerson', { Text = 'Third Person', Default = false })
+    MiscR:AddSlider('ThirdPersonDist', { Text = 'Camera Distance', Default = 8, Min = 2, Max = 20, Rounding = 1 })
+    MiscR:AddToggle('FullBright', { Text = 'Full Bright', Default = false })
+    MiscR:AddToggle('AmbientLighting', { Text = 'Ambient', Default = false })
+end
+
+-- Autofarm Tab
+local Autofarm = Window:Page({ Name = 'Autofarm', Icon = '🔄' })
+do
+    local Robberies = Autofarm:AddSubTab('Robberies')
+    local Grinding = Autofarm:AddSubTab('Grinding')
+    local Missions = Autofarm:AddSubTab('Missions')
+
+    local RL = Robberies:AddLeftGroupbox('Banks')
+    RL:AddToggle('BankFarm', { Text = 'Bank Farm', Default = false })
+    RL:AddToggle('BankGuns', { Text = 'Auto Guns', Default = false })
+    RL:AddToggle('BankC4', { Text = 'C4 Bypass', Default = false })
+    RL:AddSlider('BankDelay', { Text = 'Delay', Default = 3, Min = 1, Max = 10, Rounding = 1 })
+
+    local RR = Robberies:AddRightGroupbox('Stores')
+    RR:AddToggle('StoreFarm', { Text = 'Store Farm', Default = false })
+    RR:AddToggle('JewelryFarm', { Text = 'Jewelry Farm', Default = false })
+    RR:AddToggle('GasStationFarm', { Text = 'Gas Station', Default = false })
+
+    local GL = Grinding:AddLeftGroupbox('Grinding')
+    GL:AddToggle('ExpFarm', { Text = 'Exp Farm', Default = false })
+    GL:AddToggle('MoneyFarm', { Text = 'Money Farm', Default = false })
+    GL:AddToggle('AutoFlee', { Text = 'Auto Flee', Default = false })
+    GL:AddSlider('GrindDelay', { Text = 'Delay', Default = 2, Min = 0.5, Max = 10, Rounding = 1 })
+
+    local GR = Grinding:AddRightGroupbox('Settings')
+    GR:AddToggle('AutoLoot', { Text = 'Auto Loot', Default = true })
+    GR:AddToggle('DropWeapons', { Text = 'Drop Weapons', Default = false })
+    GR:AddToggle('AutoHealth', { Text = 'Auto Health', Default = false })
+
+    local ML = Missions:AddLeftGroupbox('Missions')
+    ML:AddToggle('AutoMission', { Text = 'Auto Mission', Default = false })
+    ML:AddToggle('AutoPrison', { Text = 'Auto Prison Break', Default = false })
+    ML:AddToggle('AutoCargo', { Text = 'Auto Cargo Ship', Default = false })
+
+    local MR = Missions:AddRightGroupbox('Vehicle')
+    MR:AddToggle('AutoVehicle', { Text = 'Auto Vehicle', Default = false })
+    MR:AddDropdown('VehicleSelect', { Text = 'Vehicle', Values = { 'Default', 'Racecar', 'Helicopter', 'Boat' }, Default = 'Default' })
+end
+
+-- Settings Tab
+local Settings = Window:Page({ Name = 'Settings', Icon = '⚙' })
+do
+    local Main = Settings:AddSubTab('Main')
+    local Keybinds = Settings:AddSubTab('Keybinds')
+    local Theme_ = Settings:AddSubTab('Theme')
+
+    local ML = Main:AddLeftGroupbox('Menu')
+    ML:AddToggle('WatermarkOn', {
+        Text = 'Watermark',
+        Default = true,
+        Callback = function(on)
+            if Library.Watermark then Library.Watermark:SetVisible(on) end
+        end,
+    })
+    ML:AddDropdown('UIKeySelect', {
+        Text = 'Menu Key',
+        Values = { 'RightShift', 'Insert', 'RightControl' },
+        Default = 'RightShift',
+        Callback = function(v)
+            Library.UIKey = Enum.KeyCode[v] or Enum.KeyCode.RightShift
+        end,
+    })
+
+    local MR = Main:AddRightGroupbox('Notifications')
+    MR:AddToggle('Notifications', { Text = 'Enable Notifications', Default = true })
+    MR:AddToggle('ConsoleOutput', { Text = 'Console Output', Default = false })
+    MR:AddButton({ Text = 'Reset Layout' })
+
+    local KL = Keybinds:AddLeftGroupbox('Keybinds')
+    KL:AddKeybind('AimbotKey', { Text = 'Aimbot Key', Default = 'E' })
+    KL:AddKeybind('TriggerbotKey', { Text = 'Trigger Key', Default = 'MB2' })
+    KL:AddKeybind('ManipKey', { Text = 'Manip Key', Default = 'Q' })
+
+    local KR = Keybinds:AddRightGroupbox('Other')
+    KR:AddKeybind('PanicKey', { Text = 'Panic Key', Default = 'Delete' })
+    KR:AddButton({ Text = 'Unbind All' })
+
+    local TL = Theme_:AddLeftGroupbox('Theme')
+    TL:AddColorPicker('AccentPreview', {
+        Text = 'Accent Color',
+        Default = Theme.accent,
+        Callback = function(c)
+            Theme.accent = c
+            Library.Accent = c
+        end,
+    })
+    TL:AddButton({ Text = 'Load Default' })
+
+    local TR = Theme_:AddRightGroupbox('Presets')
+    TR:AddButton({ Text = 'Blue' })
+    TR:AddButton({ Text = 'Red' })
+    TR:AddButton({ Text = 'Green' })
+    TR:AddButton({ Text = 'Purple' })
+end
 do
     local Aimbot = Aim:AddSubTab('Aimbot')
     local Manip = Aim:AddSubTab('Manip')
@@ -3085,227 +3303,6 @@ do
     SR:AddColorPicker('ManipFOVColor', { Text = 'FOV Color', Default = Theme.warn })
 end
 
-local ESP = Window:Page({ Name = 'ESP', Icon = '◉' })
-do
-    local Draw = ESP:AddSubTab('Drawing')
-    local Info = ESP:AddSubTab('Info')
-    local Extra = ESP:AddSubTab('Extra')
-
-    local L = Draw:AddLeftGroupbox('Player')
-    L:AddToggle('ESPEnabled', { Text = 'ESP Enabled', Default = true })
-    L:AddToggle('BoxESP', { Text = 'Box', Default = true })
-    L:AddToggle('SkeletonESP', { Text = 'Skeleton', Default = false })
-    L:AddToggle('ChamsESP', { Text = 'Chams', Default = false })
-    L:AddColorPicker('ESPColor', { Text = 'ESP Color', Default = Theme.esp })
-
-    local R = Draw:AddRightGroupbox('Style')
-    R:AddDropdown('ChamsMethod', { Text = 'Chams', Values = { 'Highlight', 'Transparent' }, Default = 'Highlight' })
-    R:AddToggle('ESPOutline', { Text = 'Outline', Default = true })
-    R:AddSlider('ChamsFill', { Text = 'Fill', Default = 0.55, Min = 0, Max = 1, Rounding = 2 })
-    R:AddSlider('SkeletonThickness', { Text = 'Skeleton', Default = 1.8, Min = 0.5, Max = 4, Rounding = 1 })
-    R:AddSlider('MaxDistance', { Text = 'Max Distance', Default = 1000, Min = 50, Max = 3000, Rounding = 0 })
-
-    local IL = Info:AddLeftGroupbox('Labels')
-    IL:AddToggle('NameESP', { Text = 'Names', Default = true })
-    IL:AddToggle('DistanceESP', { Text = 'Distance', Default = true })
-    IL:AddToggle('HealthTextESP', { Text = 'Health Text', Default = true })
-    IL:AddToggle('HealthBarESP', { Text = 'Health Bar', Default = true })
-    IL:AddToggle('VisibleESP', { Text = 'Visible Flag', Default = true })
-
-    local IR = Info:AddRightGroupbox('Detector')
-    IR:AddToggle('CheaterDetector', { Text = 'Cheater Detector', Default = true })
-    IR:AddSlider('CheaterSensitivity', { Text = 'Sensitivity', Default = 50, Min = 0, Max = 100, Rounding = 0 })
-    IR:AddColorPicker('CheaterColor', { Text = 'Flag Color', Default = Theme.danger })
-    IR:AddToggle('TargetHUD', {
-        Text = 'Target HUD',
-        Default = true,
-        Callback = function(on)
-            if Library.TargetHUD then Library.TargetHUD:SetVisible(on) end
-        end,
-    })
-
-    local EL = Extra:AddLeftGroupbox('Gear')
-    EL:AddToggle('HeldWeaponESP', { Text = 'Held Weapon', Default = false })
-    EL:AddToggle('WeaponAttachments', { Text = 'Attachments', Default = false })
-    EL:AddToggle('BeltESP', { Text = 'Belt', Default = false })
-    EL:AddToggle('ViewFullInventory', { Text = 'Full Inventory', Default = true })
-    EL:AddKeybind('ViewInventoryKey', { Text = 'Inventory Key', Default = 'G' })
-
-    local ER = Extra:AddRightGroupbox('Items')
-    ER:AddToggle('ItemChams', { Text = 'Item Chams', Default = false })
-    ER:AddDropdown('ItemChamsMethod', { Text = 'Method', Values = { 'Highlight', 'Transparent' }, Default = 'Highlight' })
-    ER:AddSlider('ItemChamsFill', { Text = 'Fill', Default = 0.55, Min = 0, Max = 1, Rounding = 2 })
-    ER:AddToggle('HitNotifications', { Text = 'Hit Notifs', Default = false })
-    ER:AddColorPicker('ItemChamsColor', { Text = 'Item Color', Default = Theme.warn })
-end
-
-local LocalTab = Window:Page({ Name = 'Local', Icon = '◐' })
-do
-    local Cam = LocalTab:AddSubTab('Camera')
-    local View = LocalTab:AddSubTab('Viewmodel')
-    local Move = LocalTab:AddSubTab('Movement')
-    local Vis = LocalTab:AddSubTab('Visuals')
-
-    local CL = Cam:AddLeftGroupbox('Camera')
-    CL:AddToggle('ZoomEnabled', { Text = 'Zoom', Default = false })
-    CL:AddSlider('ZoomStrength', { Text = 'Zoom FOV', Default = 25, Min = 5, Max = 70, Rounding = 0 })
-    CL:AddKeybind('ZoomKey', { Text = 'Zoom Key', Default = 'C' })
-    CL:AddSlider('FOVChanger', { Text = 'FOV', Default = 90, Min = 60, Max = 120, Rounding = 0 })
-
-    local CR = Cam:AddRightGroupbox('Freecam')
-    CR:AddToggle('FreecamEnabled', { Text = 'Freecam', Default = false })
-    CR:AddKeybind('FreecamKey', { Text = 'Freecam Key', Default = 'V' })
-    CR:AddToggle('ThirdPersonLocal', { Text = 'Third Person', Default = false })
-
-    local VL = View:AddLeftGroupbox('Model')
-    VL:AddToggle('SmallGun', { Text = 'Small Gun', Default = false })
-    VL:AddSlider('SmallGunScale', { Text = 'Gun Scale', Default = 0.5, Min = 0.1, Max = 1, Rounding = 2 })
-    VL:AddToggle('RemoveArms', { Text = 'Remove Arms', Default = false })
-    VL:AddToggle('SkinChanger', {
-        Text = 'Skin Changer',
-        Default = false,
-        Callback = function(on)
-            if Library.SkinBrowser then
-                if on then Library.SkinBrowser:Open() else Library.SkinBrowser:Close() end
-            end
-        end,
-    })
-
-    local VR = View:AddRightGroupbox('Offsets')
-    VR:AddSlider('ViewmodelX', { Text = 'Offset X', Default = 0, Min = -3, Max = 3, Rounding = 2 })
-    VR:AddSlider('ViewmodelY', { Text = 'Offset Y', Default = 0, Min = -3, Max = 3, Rounding = 2 })
-    VR:AddSlider('ViewmodelZ', { Text = 'Offset Z', Default = 0, Min = -3, Max = 3, Rounding = 2 })
-
-    local ML = Move:AddLeftGroupbox('Climb / Swim')
-    ML:AddToggle('WallClimb', { Text = 'Wall Climb', Default = false })
-    ML:AddKeybind('WallClimbKey', { Text = 'Climb Key', Default = 'LeftControl' })
-    ML:AddSlider('WallClimbSpeed', { Text = 'Climb Speed', Default = 28, Min = 10, Max = 60, Rounding = 0 })
-    ML:AddToggle('Jesus', { Text = 'Jesus', Default = false })
-
-    local MR = Move:AddRightGroupbox('Killmove')
-    MR:AddToggle('Killmove', { Text = 'Killmove', Default = false })
-    MR:AddDropdown('KillmoveMode', {
-        Text = 'Mode',
-        Values = { 'Pkill (auto elevate)', 'Depth only' },
-        Default = 'Pkill (auto elevate)',
-    })
-    MR:AddSlider('KillmoveDepth', { Text = 'Depth', Default = 60, Min = 10, Max = 150, Rounding = 0 })
-
-    local XL = Vis:AddLeftGroupbox('World FX')
-    XL:AddToggle('AntiVisor', { Text = 'Anti Visor', Default = false })
-    XL:AddToggle('NoFog', { Text = 'No Fog', Default = false })
-    XL:AddToggle('NoFoliage', { Text = 'No Foliage', Default = false })
-    XL:AddToggle('NoShadows', { Text = 'No Shadows', Default = false })
-    XL:AddToggle('NoInventoryBlur', { Text = 'No Inv Blur', Default = false })
-
-    local XR = Vis:AddRightGroupbox('Misc FX')
-    XR:AddToggle('FakeDagr', { Text = 'Fake Dagr', Default = false })
-    XR:AddToggle('AntiMine', { Text = 'Anti Mine', Default = false })
-    XR:AddToggle('KeyList', { Text = 'Key List', Default = false })
-    XR:AddToggle('AmbientLighting', { Text = 'Ambient', Default = false })
-    XR:AddColorPicker('AmbientColor', { Text = 'Ambient Color', Default = Color3.fromRGB(180, 180, 200) })
-    XR:AddSlider('AmbientBrightness', { Text = 'Brightness', Default = 1, Min = 0.2, Max = 15, Rounding = 1 })
-end
-
-local World = Window:Page({ Name = 'World', Icon = '◈' })
-do
-    local Main = World:AddSubTab('ESP')
-    local Filter = World:AddSubTab('Filter')
-
-    local L = Main:AddLeftGroupbox('Entities')
-    L:AddToggle('BossESP', { Text = 'Boss ESP', Default = false })
-    L:AddToggle('NPCESP', { Text = 'NPC ESP', Default = false })
-    L:AddToggle('CorpseESP', { Text = 'Corpse ESP', Default = false })
-    L:AddColorPicker('BossESPColor', { Text = 'Boss Color', Default = Color3.fromRGB(255, 105, 180) })
-
-    local R = Main:AddRightGroupbox('Loot')
-    R:AddToggle('MilitaryCrateESP', { Text = 'Military Crates', Default = false })
-    R:AddToggle('LootESP', { Text = 'Loot ESP', Default = false })
-    R:AddToggle('KeyHole', { Text = 'Key Hole', Default = false })
-    R:AddColorPicker('LootESPColor', { Text = 'Loot Color', Default = Color3.fromRGB(255, 210, 90) })
-
-    local FL = Filter:AddLeftGroupbox('Whitelist')
-    FL:AddToggle('WhitelistFilter', { Text = 'Friend Whitelist', Default = false })
-    FL:AddInput('WhitelistNames', { Text = 'Names', Default = '', Placeholder = 'friend1, friend2' })
-    local FR = Filter:AddRightGroupbox('Notes')
-    FR:AddLabel('Whitelist hides ESP on friends.')
-    FR:AddLabel('Colors are visual-only for now.')
-end
-
-local Exploit = Window:Page({ Name = 'Exploit', Icon = '⚡' })
-do
-    local L = Exploit:AddLeftGroupbox('Movement')
-    L:AddToggle('NoSlow', { Text = 'No Slow', Default = false })
-    L:AddToggle('OmniSprint', { Text = 'Omni Sprint', Default = false })
-    L:AddToggle('NoLegBreak', { Text = 'No Leg Break', Default = false })
-
-    local R = Exploit:AddRightGroupbox('Misc')
-    R:AddToggle('AntiKick', { Text = 'Anti Kick', Default = true })
-    R:AddToggle('AntiCheatBypass', { Text = 'AC Bypass', Default = true })
-    R:AddToggle('NoGunSway', { Text = 'No Gun Sway', Default = false })
-    R:AddToggle('InstantScope', { Text = 'Instant Scope', Default = false })
-    R:AddToggle('NoScope', { Text = 'No Scope', Default = false })
-end
-
-local Config = Window:Page({ Name = 'Config', Icon = '⚙' })
-do
-    local L = Config:AddLeftGroupbox('Configs')
-    L:AddInput('ConfigName', { Text = 'Name', Default = '', Placeholder = 'my config' })
-    L:AddDropdown('ConfigList', { Text = 'Saved', Values = { 'default', 'rage', 'legit' }, Default = 'default' })
-    L:AddButton({ Text = 'Save' })
-    L:AddButton({ Text = 'Load' })
-
-    local R = Config:AddRightGroupbox('Menu')
-    R:AddToggle('WatermarkOn', {
-        Text = 'Watermark',
-        Default = true,
-        Callback = function(on)
-            if Library.Watermark then Library.Watermark:SetVisible(on) end
-        end,
-    })
-    R:AddDropdown('UIKeySelect', {
-        Text = 'Menu Key',
-        Values = { 'RightShift', 'Insert', 'RightControl' },
-        Default = 'RightShift',
-        Callback = function(v)
-            Library.UIKey = Enum.KeyCode[v] or Enum.KeyCode.RightShift
-        end,
-    })
-    R:AddColorPicker('AccentPreview', {
-        Text = 'Accent',
-        Default = Theme.accent,
-        Callback = function(c)
-            Theme.accent = c
-            Library.Accent = c
-        end,
-    })
-    R:AddButton({
-        Text = 'Open Skins',
-        Callback = function()
-            if Library.SkinBrowser then Library.SkinBrowser:Open() end
-        end,
-    })
-    R:AddButton({
-        Text = 'Notify Test',
-        Callback = function()
-            Library:Notify('Config saved successfully', 2.4, 'success')
-            task.delay(0.35, function()
-                Library:Notify('Aimbot locked · 42m', 2.6, 'info')
-            end)
-            task.delay(0.7, function()
-                Library:Notify('High ping · expect delay', 2.8, 'warn')
-            end)
-        end,
-    })
-    R:AddButton({
-        Text = 'Destroy UI',
-        Callback = function()
-            clearBlur()
-            if Library.ScreenGUI then Library.ScreenGUI:Destroy() end
-        end,
-    })
-end
-
 Library:CreateWatermark({ Title = 'jailbreak' })
 Library:CreateTargetHUD({ Visible = true })
 Library:CreateSkinBrowser()
@@ -3317,7 +3314,7 @@ Library:PlayLoading({ Duration = 2.2 })
 if Library.Watermark then Library.Watermark:SetVisible(Library.Flags.WatermarkOn ~= false) end
 if Library.TargetHUD then Library.TargetHUD:SetVisible(Library.Flags.TargetHUD ~= false) end
 Library:SetOpen(true)
-Library:Notify('Jailbreak ready', 2)
+Library:Notify("Jailbreak ready", 2)
 end
 
 return Library
